@@ -1,5 +1,6 @@
 import networkx as nx
 import datetime
+import itertools
 from multiprocessing import Pool
 
 
@@ -43,7 +44,18 @@ def count_node_triangles (Graph, nodes = None):
     except:
         raise Exception ('Invalid node or graph')
 
-def nodes_betweenness_centrality (Graph, processess = None):
+def chunks(l, n):
+    """
+    Divide a list of nodes `l` in `n` chunks
+    """
+    l_c = iter(l)
+    while 1:
+        x = tuple(itertools.islice(l_c, n))
+        if not x:
+            return
+        yield x
+
+def nodes_betweenness_centrality (Graph, processes = None):
     """
     Calculates the betweenness centrality of every node in a parallel way. As the Lightning
     network is composed of thousands of nodes, using multiprocessing can help to accelerate
@@ -52,14 +64,14 @@ def nodes_betweenness_centrality (Graph, processess = None):
     try:
         p = Pool(processes=processes)
         node_divisor = len(p._pool) * 4
-        node_chunks = list(chunks(G.nodes(), G.order() // node_divisor))
+        node_chunks = list(chunks(Graph.nodes(), Graph.order() // node_divisor))
         num_chunks = len(node_chunks)
         bt_sc = p.starmap(
             nx.betweenness_centrality_subset,
             zip(
-                [G] * num_chunks,
+                [Graph] * num_chunks,
                 node_chunks,
-                [list(G)] * num_chunks,
+                [list(Graph)] * num_chunks,
                 [True] * num_chunks,
                 [None] * num_chunks,
             ),
