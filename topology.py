@@ -59,7 +59,8 @@ def nodes_betweenness_centrality (Graph, processes = None):
     """
     Calculates the betweenness centrality of every node in a parallel way. As the Lightning
     network is composed of thousands of nodes, using multiprocessing can help to accelerate
-    some calculations
+    some calculations. The betweenness centrality is key to develop a prefferential 
+    attachment strategy that is profitable for the user
     """
     try:
         p = Pool(processes=processes)
@@ -87,5 +88,13 @@ def nodes_betweenness_centrality (Graph, processes = None):
     except:
         raise Exception ('Invalid Graph. Could not calculate betweenness centrality')
 
-
+def nodes_closenness_centrality (Graph):
+    """
+    Calculates the closenness centrality of every node. The closenness centrality is key
+    to develop an algorithm that makes issuing transaction to other nodes cheap.
+    """
+    try:
+        return nx.closenness_centrality(Graph)
+    except:
+        raise Exception ('Invalid Graph. Could not calculate closenness centrality')
     
