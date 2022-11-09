@@ -78,7 +78,7 @@ def nodes_betweenness_centrality (Graph, processes = None):
             ),
         )
 
-        # Reduce the partial solutions
+        """Reduce the partial solutions"""
         bt_c = bt_sc[0]
         for bt in bt_sc[1:]:
             for n in bt:
@@ -97,4 +97,19 @@ def nodes_closenness_centrality (Graph):
         return nx.closenness_centrality(Graph)
     except:
         raise Exception ('Invalid Graph. Could not calculate closenness centrality')
-    
+
+def triadic_census (Graph):
+    """
+    Returns the triadic census of the graph. As the native NetworkX function does not 
+    provide a triadic census for undirected graphs, we iterate through combinations of
+    three nodes in the graph to create our own triadic census in undirected graphs.
+    Solution inspirated by: https://stackoverflow.com/questions/54730863/how-to-get-
+    triad-census-in-undirected-graph-using-networkx-in-python
+    """
+    try:
+        triadic_class = {}
+        for nodes in combinations(Graph.nodes, 3):
+            n_edges = Graph. subgraph(nodes).number_of_edges()
+            triad_class.setdefault(n_edges, []).append(nodes)
+    except:
+        raise Exception ('Invalid Graph. Could not compute the triadic census')
