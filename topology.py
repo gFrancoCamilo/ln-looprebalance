@@ -111,6 +111,7 @@ def triadic_census (Graph):
         for nodes in combinations(Graph.nodes, 3):
             n_edges = Graph. subgraph(nodes).number_of_edges()
             triad_class.setdefault(n_edges, []).append(nodes)
+        del triadic_class[0]
         return triadic_class
     except:
         raise Exception ('Invalid Graph. Could not compute the triadic census')
