@@ -21,7 +21,7 @@ def generate_timestamps ():
     the first timestamp (1579575600) is added to the dates list as 21 Jan 2018
     """
     while timestamp_iterator <= 1630378800:
-        filenames.append('graph-' + str(timestamp_iterator))
+        filenames.append('ln-snapshots/graph-' + str(timestamp_iterator))
         dates.append(datetime.datetime.fromtimestamp(timestamp_iterator).strftime('%d-%m-%Y'))
         timestamp_iterator = timestamp_iterator + 2*7*24*3600
     return filenames, dates
@@ -30,10 +30,11 @@ def generate_timestamps ():
 def create_graph (filename: str):
     """
     Reads file that contains the Lightning network graph encoded in graphml format and
-    returns a NetworkX graph
+    returns a NetworkX undirected graph
     """
     try:
         Graph = nx.read_graphml(filename)
+        Graph = Graph.to_undirected()
         return Graph
     except:
         raise Exception ('Invalid graph filename or format')
@@ -88,13 +89,13 @@ def nodes_betweenness_centrality (Graph, processes = None):
     except:
         raise Exception ('Invalid Graph. Could not calculate betweenness centrality')
 
-def nodes_closenness_centrality (Graph):
+def nodes_closeness_centrality (Graph):
     """
     Calculates the closenness centrality of every node. The closenness centrality is key
     to develop an algorithm that makes issuing transaction to other nodes cheap.
     """
     try:
-        return nx.closenness_centrality(Graph)
+        return nx.closeness_centrality(Graph)
     except:
         raise Exception ('Invalid Graph. Could not calculate closenness centrality')
 
@@ -108,9 +109,9 @@ def triadic_census (Graph):
     """
     try:
         triadic_class = {}
-        for nodes in combinations(Graph.nodes, 3):
+        for nodes in itertools.combinations(Graph.nodes, 3):
             n_edges = Graph. subgraph(nodes).number_of_edges()
-            triad_class.setdefault(n_edges, []).append(nodes)
+            triadic_class.setdefault(n_edges, []).append(nodes)
         del triadic_class[0]
         return triadic_class
     except:
