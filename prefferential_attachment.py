@@ -14,3 +14,24 @@ def triadic_closure (Graph, node, number_channels, triadic_census, alpha, beta):
     through their betweenness and closeness centrality measure to verify if
     the new connection make the node more profitable or not.
     """
+
+def betweenness_improvement (Graph, node_improve, channels):
+    new_edges = []
+    while(len(new_edges) < channels):
+        max_reward = 0
+        selected_node = []
+        network_nodes = Graph.nodes()
+        for node in network_nodes:
+            if node == node_improve:
+                continue
+            if Graph.has_edge(node_improve, node) == True:
+                continue
+
+            Graph.add_edge(node_improve, node)
+            bc = nodes_betweenness_centrality(Graph)
+            new_reward = bc[node_improve]
+            if new_reward >= max_reward:
+                max_reward = new_reward
+                max_node = node
+            else:
+                Graph.remove_edge(node_improve, node)
