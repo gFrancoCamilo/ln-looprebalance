@@ -1,5 +1,5 @@
 import networkx as nx
-from topology import all
+from topology import *
 
 def triadic_closure (Graph, node, number_channels, triadic_census, alpha, beta):
     """

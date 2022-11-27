@@ -1,4 +1,5 @@
 from topology import *
+import time
 
 def generate_timestamps_test():
     """
@@ -81,6 +82,9 @@ def triadic_census_test(Graph):
 filenames = generate_timestamps_test()
 Graph = create_graph_test(filenames, 0)
 count_node_triangles_test(Graph)
-#nodes_betweenness_centrality_test(Graph, 15)
+start = time.time()
+nodes_betweenness_centrality_test(Graph, 15)
+end = time.time()
+print("Time: " + str(end-start))
 #nodes_closeness_centrality_test(Graph)
-triadic_census_test(Graph)
+#triadic_census_test(Graph)

@@ -110,7 +110,7 @@ def triadic_census (Graph):
     try:
         triadic_class = {}
         for nodes in itertools.combinations(Graph.nodes, 3):
-            n_edges = Graph. subgraph(nodes).number_of_edges()
+            n_edges = Graph.subgraph(nodes).number_of_edges()
             triadic_class.setdefault(n_edges, []).append(nodes)
         del triadic_class[0]
         return triadic_class
