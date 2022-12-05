@@ -47,14 +47,14 @@ def count_node_triangles_test(Graph):
     except:
         raise Exception ('Failed executing count_node_triangles function in topology.py')
 
-def nodes_betweenness_centrality_test (Graph, processes):
+def edges_betweenness_centrality_test (Graph, processes):
     """
     Tests the nodes_betweenness_centrality function from topology.py.
     As the function uses multithreading, the test function accepts
     the number of threads an argument to be tested
     """
     try:
-        bc = nodes_betweenness_centrality(Graph, processes)
+        bc = edges_betweenness_centrality(Graph, processes)
         print("Betweenness centrality: " + str(bc))
     except:
         raise Exception ('Failed executing nodes_betweenness_centrality function in topology.py')
@@ -81,10 +81,10 @@ def triadic_census_test(Graph):
 
 filenames = generate_timestamps_test()
 Graph = create_graph_test(filenames, 0)
-count_node_triangles_test(Graph)
-start = time.time()
-nodes_betweenness_centrality_test(Graph, 15)
-end = time.time()
-print("Time: " + str(end-start))
-#nodes_closeness_centrality_test(Graph)
+#count_node_triangles_test(Graph)
+#start = time.time()
+edges_betweenness_centrality_test(Graph, 15)
+#end = time.time()
+#print("Time: " + str(end-start))
+nodes_closeness_centrality_test(Graph)
 #triadic_census_test(Graph)

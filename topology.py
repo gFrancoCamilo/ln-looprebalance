@@ -56,7 +56,7 @@ def chunks(l, n):
             return
         yield x
 
-def nodes_betweenness_centrality (Graph, processes = None):
+def edges_betweenness_centrality (Graph, processes = None):
     """
     Calculates the betweenness centrality of every node in a parallel way. As the Lightning
     network is composed of thousands of nodes, using multiprocessing can help to accelerate
@@ -69,7 +69,7 @@ def nodes_betweenness_centrality (Graph, processes = None):
         node_chunks = list(chunks(Graph.nodes(), Graph.order() // node_divisor))
         num_chunks = len(node_chunks)
         bt_sc = p.starmap(
-            nx.betweenness_centrality_subset,
+            nx.edge_betweenness_centrality_subset,
             zip(
                 [Graph] * num_chunks,
                 node_chunks,
