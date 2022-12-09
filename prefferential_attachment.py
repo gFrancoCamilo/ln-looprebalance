@@ -15,10 +15,15 @@ def triadic_closure (Graph, node, number_channels, triadic_census, alpha, beta):
     the new connection make the node more profitable or not.
     """
 
-def incremental_closeness (Graph, node_improve, channels):
+def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, beta = 0.5, cycle = True):
+    if node_improve not in Graph.nodes:
+        Graph.add_node(node_improve)
+    
     cc = nx.closeness_centrality(Graph)
+    bc = nx.edge_betweenness_centrality(Graph)
     new_edges = []
     selected_node = []
+    cc_after = []
     while(len(new_edges) < channels):
         max_reward = 0
         network_nodes = Graph.nodes()
@@ -29,42 +34,30 @@ def incremental_closeness (Graph, node_improve, channels):
                 continue
                  
             new_cc = nx.incremental_closeness_centrality(Graph, (node_improve, node), cc, True)
-            new_reward = new_cc[node_improve]
-            if new_reward >= max_reward:
-                max_reward = new_reward
-                max_node = node
-
-        Graph.add_edge(max_node,node_improve)
-        selected_node.append(max_node)
-        new_edges.append((max_node,node_improve))
-    return selected_node
-
-def incremental_betweenness (Graph, node_improve, channels):
-    bc = nx.edge_betweenness_centrality(Graph)
-    new_edges = []
-    selected_node = []
-    while(len(new_edges) < channels):
-        max_reward = 0
-        network_nodes = Graph.nodes()
-        for node in network_nodes:
-            if node == node_improve:
-                continue
-            if Graph.has_edge(node_improve, node) == True:
-                continue
-            
             Graph.add_edge(node_improve, node)
             new_bc = nx.edge_betweenness_centrality(Graph)
             
-            if node > node_improve:
-                new_reward = new_bc[(node_improve, node)]
+            if (node_improve, node) not in new_bc:
+                new_reward = (alpha*new_bc[(node, node_improve)] + beta*new_cc[node_improve])/2
             else:
-                new_reward = new_bc[(node, node_improve)]
+                new_reward = (alpha*new_bc[(node_improve, node)] + beta*[node_improve])/2
+            
             if new_reward >= max_reward:
-                max_reward = new_reward
-                max_node = node
+                if cycle == True:
+                    if len(selected_node) != 0:
+                        for node1 in selected_node:
+                            if Graph.has_edge(node,node1) == True or Graph.has_edge(node1, node) == True:
+                                max_reward = new_reward
+                                max_node = node
+                    else:
+                        max_reward = new_reward
+                        max_node = node
+                else: 
+                    max_reward = new_reward
+                    max_node = node
             Graph.remove_edge(node_improve, node)
-
         Graph.add_edge(max_node,node_improve)
+        cc_after.append(max_reward)
         selected_node.append(max_node)
         new_edges.append((max_node,node_improve))
-    return selected_node
+    return selected_node, cc_after
