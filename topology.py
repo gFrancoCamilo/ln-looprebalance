@@ -99,6 +99,17 @@ def nodes_closeness_centrality (Graph):
     except:
         raise Exception ('Invalid Graph. Could not calculate closenness centrality')
 
+def get_node_diff (Graph2, Graph1):
+    """
+    Returns the set of nodes present in Graph2 that are not present in Graph1. Thus,
+    the function is useful to find the nodes that were introduced in a period between
+    two dates
+    """
+    try:
+        return Graph2.nodes() - Graph1.nodes()
+    except:
+        raise Exception ('Could not diff the two graphs')
+
 def triadic_census (Graph):
     """
     Returns the triadic census of the graph. As the native NetworkX function does not 
