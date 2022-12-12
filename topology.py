@@ -75,7 +75,7 @@ def edges_betweenness_centrality (Graph, processes = None):
                 node_chunks,
                 [list(Graph)] * num_chunks,
                 [True] * num_chunks,
-                [None] * num_chunks,
+                ["fee_base_msat"] * num_chunks,
             ),
         )
 
