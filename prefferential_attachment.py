@@ -1,5 +1,6 @@
 import networkx as nx
 from topology import *
+import time
 
 def triadic_closure (Graph, node, number_channels, triadic_census, alpha, beta):
     """
@@ -19,8 +20,6 @@ def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, beta = 0.
     if node_improve not in Graph.nodes:
         Graph.add_node(node_improve)
     
-    cc = nx.closeness_centrality(Graph)
-    bc = nx.edge_betweenness_centrality(Graph)
     new_edges = []
     selected_node = []
     cc_after = []
@@ -32,15 +31,17 @@ def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, beta = 0.
                 continue
             if Graph.has_edge(node_improve, node) == True:
                 continue
-                 
-            new_cc = nx.incremental_closeness_centrality(Graph, (node_improve, node), cc, True)
-            Graph.add_edge(node_improve, node)
-            new_bc = nx.edge_betweenness_centrality(Graph)
+
+              
+            
+            Graph.add_edge(node_improve, node, fee_base_msat = 1000)
+            new_cc = nx.closeness_centrality(Graph, u=node_improve,distance="fee_base_msat")
+            new_bc = edges_betweenness_centrality(Graph, 15)
             
             if (node_improve, node) not in new_bc:
-                new_reward = (alpha*new_bc[(node, node_improve)] + beta*new_cc[node_improve])/2
+                new_reward = (alpha*new_bc[(node, node_improve)] + beta*new_cc)/2
             else:
-                new_reward = (alpha*new_bc[(node_improve, node)] + beta*[node_improve])/2
+                new_reward = (alpha*new_bc[(node_improve, node)] + beta*new_cc)/2
             
             if new_reward >= max_reward:
                 if cycle == True:
