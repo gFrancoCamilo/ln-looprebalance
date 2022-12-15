@@ -127,3 +127,9 @@ def triadic_census (Graph):
         return triadic_class
     except:
         raise Exception ('Invalid Graph. Could not compute the triadic census')
+
+def get_k_most_centralized_nodes (Graph, k):
+    centralization = nx.degree_centrality(Graph)
+    centralization = dict(sorted(centralization.items(), key=lambda item: item[1]))
+    centralization_list = list(centralization.keys())[-k:]
+    return centralization_list

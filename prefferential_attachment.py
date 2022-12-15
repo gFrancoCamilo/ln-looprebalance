@@ -23,10 +23,13 @@ def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, beta = 0.
     new_edges = []
     selected_node = []
     cc_after = []
+
+    centralized = get_k_most_centralized_nodes(Graph, 400)
+
     while(len(new_edges) < channels):
         max_reward = 0
-        network_nodes = Graph.nodes()
-        for node in network_nodes:
+        #network_nodes = Graph.nodes()
+        for node in centralized:
             if node == node_improve:
                 continue
             if Graph.has_edge(node_improve, node) == True:

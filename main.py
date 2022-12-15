@@ -15,30 +15,35 @@ def main ():
     for node in node_diff:
         transitivity = (nx.transitivity(Graph))
         transitivity_file.write(str(transitivity))
+        transitivity_file.flush()
         selected_node, reward = incremental_closeness (Graph, node, 2)
         pickle.dump(selected_node, nodes_file)
         pickle.dump(reward, reward_file)
 
         transitivity = (nx.transitivity(Graph))
         transitivity_file.write(str(transitivity))
-        selected_node, reward = incremental_closeness (Graph, node, 3)
+        transitivity_file.flush()
+        selected_node, reward = incremental_closeness (Graph, node, 1)
         pickle.dump(selected_node, nodes_file)
         pickle.dump(reward, reward_file)
         
         transitivity = (nx.transitivity(Graph))
         transitivity_file.write(str(transitivity))
-        selected_node, reward = incremental_closeness (Graph, node, 4)
+        transitivity_file.flush()
+        selected_node, reward = incremental_closeness (Graph, node, 1)
         nodes_file.write(selected_node)
         reward_file.write(reward)
         
         transitivity = (nx.transitivity(Graph))
         transitivity_file.write(str(transitivity))
-        selected_node, reward = incremental_closeness (Graph, node, 5)
+        transitivity_file.flush()
+        selected_node, reward = incremental_closeness (Graph, node, 1)
         pickle.dump(selected_node, nodes_file)
         pickle.dump(reward, reward_file)
 
         transitivity = (nx.transitivity(Graph))
         transitivity_file.write(str(transitivity))
+        transitivity_file.flush()
     
     nx.write_graphml(Graph, 'graph_after')
     transitivity_file.close()

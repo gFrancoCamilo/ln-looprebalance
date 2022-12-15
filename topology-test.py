@@ -78,13 +78,24 @@ def triadic_census_test(Graph):
     except:
         raise Exception ('Failed executing triadic_census function in topology.py')
 
+def get_k_most_centralized_nodes_test (Graph, k):
+    """
+    Tests the get_k_most_centralized_nodes function from topology.py
+    """
+    try:
+        centralized = get_k_most_centralized_nodes(Graph, k)
+        print(centralized)
+    except:
+        raise Exception ('Failed to get most centralized nodes')
+
 
 filenames = generate_timestamps_test()
 Graph = create_graph_test(filenames, 0)
+get_k_most_centralized_nodes_test(Graph, 50)
 #count_node_triangles_test(Graph)
 #start = time.time()
-edges_betweenness_centrality_test(Graph, 15)
+#edges_betweenness_centrality_test(Graph, 15)
 #end = time.time()
 #print("Time: " + str(end-start))
-nodes_closeness_centrality_test(Graph)
+#nodes_closeness_centrality_test(Graph)
 #triadic_census_test(Graph)
