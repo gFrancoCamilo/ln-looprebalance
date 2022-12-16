@@ -31,8 +31,8 @@ def main ():
         transitivity_file.write(str(transitivity))
         transitivity_file.flush()
         selected_node, reward = incremental_closeness (Graph, node, 1)
-        nodes_file.write(selected_node)
-        reward_file.write(reward)
+        pickle.dump(selected_node, nodes_file)
+        pickle.dump(reward, reward_file)
         
         transitivity = (nx.transitivity(Graph))
         transitivity_file.write(str(transitivity))
