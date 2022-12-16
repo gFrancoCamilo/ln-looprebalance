@@ -3,7 +3,7 @@ from prefferential_attachment import *
 from random import randint
 import pickle
 
-def main ():
+def main (result):
     filenames, dates = generate_timestamps()
     Graph = create_graph(filenames[0])
     node_diff = list(get_node_diff(create_graph(filenames[1]), create_graph(filenames[0])))[-1:]
@@ -12,42 +12,78 @@ def main ():
     nodes_file = open("selected_nodes","wb")
     reward_file = open("reward","wb")
 
-    for node in node_diff:
-        transitivity = (nx.transitivity(Graph))
-        transitivity_file.write(str(transitivity))
-        transitivity_file.flush()
-        selected_node, reward = incremental_closeness (Graph, node, 2)
-        pickle.dump(selected_node, nodes_file)
-        pickle.dump(reward, reward_file)
+    if result == 'greedy':
+        for node in node_diff:
+            transitivity = (nx.transitivity(Graph))
+            transitivity_file.write(str(transitivity))
+            transitivity_file.flush()
+            selected_node, reward = incremental_closeness (Graph, node, 2)
+            pickle.dump(selected_node, nodes_file)
+            pickle.dump(reward, reward_file)
 
-        transitivity = (nx.transitivity(Graph))
-        transitivity_file.write(str(transitivity))
-        transitivity_file.flush()
-        selected_node, reward = incremental_closeness (Graph, node, 1)
-        pickle.dump(selected_node, nodes_file)
-        pickle.dump(reward, reward_file)
-        
-        transitivity = (nx.transitivity(Graph))
-        transitivity_file.write(str(transitivity))
-        transitivity_file.flush()
-        selected_node, reward = incremental_closeness (Graph, node, 1)
-        pickle.dump(selected_node, nodes_file)
-        pickle.dump(reward, reward_file)
-        
-        transitivity = (nx.transitivity(Graph))
-        transitivity_file.write(str(transitivity))
-        transitivity_file.flush()
-        selected_node, reward = incremental_closeness (Graph, node, 1)
-        pickle.dump(selected_node, nodes_file)
-        pickle.dump(reward, reward_file)
+            transitivity = (nx.transitivity(Graph))
+            transitivity_file.write(str(transitivity))
+            transitivity_file.flush()
+            selected_node, reward = incremental_closeness (Graph, node, 1)
+            pickle.dump(selected_node, nodes_file)
+            pickle.dump(reward, reward_file)
 
-        transitivity = (nx.transitivity(Graph))
-        transitivity_file.write(str(transitivity))
-        transitivity_file.flush()
-    
+            transitivity = (nx.transitivity(Graph))
+            transitivity_file.write(str(transitivity))
+            transitivity_file.flush()
+            selected_node, reward = incremental_closeness (Graph, node, 1)
+            pickle.dump(selected_node, nodes_file)
+            pickle.dump(reward, reward_file)
+
+            transitivity = (nx.transitivity(Graph))
+            transitivity_file.write(str(transitivity))
+            transitivity_file.flush()
+            selected_node, reward = incremental_closeness (Graph, node, 1)
+            pickle.dump(selected_node, nodes_file)
+            pickle.dump(reward, reward_file)
+
+            transitivity = (nx.transitivity(Graph))
+            transitivity_file.write(str(transitivity))
+            transitivity_file.flush()
+
+    if result == 'degree':
+        for node in node_diff:
+            transitivity = (nx.transitivity(Graph))
+            transitivity_file.write(str(transitivity))
+            transitivity_file.flush()
+            selected_node, reward = degree_only (Graph, node, 2)
+            pickle.dump(selected_node, nodes_file)
+            pickle.dump(reward, reward_file)
+
+            transitivity = (nx.transitivity(Graph))
+            transitivity_file.write(str(transitivity))
+            transitivity_file.flush()
+            selected_node, reward = degree_only (Graph, node, 1)
+            pickle.dump(selected_node, nodes_file)
+            pickle.dump(reward, reward_file)
+
+            transitivity = (nx.transitivity(Graph))
+            transitivity_file.write(str(transitivity))
+            transitivity_file.flush()
+            selected_node, reward = degree_only (Graph, node, 1)
+            pickle.dump(selected_node, nodes_file)
+            pickle.dump(reward, reward_file)
+
+            transitivity = (nx.transitivity(Graph))
+            transitivity_file.write(str(transitivity))
+            transitivity_file.flush()
+            selected_node, reward = degree_only (Graph, node, 1)
+            pickle.dump(selected_node, nodes_file)
+            pickle.dump(reward, reward_file)
+
+            transitivity = (nx.transitivity(Graph))
+            transitivity_file.write(str(transitivity))
+            transitivity_file.flush()
+
+
     nx.write_graphml(Graph, 'graph_after')
     transitivity_file.close()
     nodes_file.close()
     reward_file.close()
 
-main()
+main('degree')
