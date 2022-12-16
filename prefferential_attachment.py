@@ -75,40 +75,38 @@ def degree_only (Graph, node_improve, channels, alpha = 0.5, beta = 0.5, cycle =
     cc_after = []
 
     centralized = get_k_most_centralized_nodes(Graph, 400)
-
+    count = 1
     while(len(new_edges) < channels):
-        for node in reversed(centralized):
-            if node == node_improve:
-                continue
-            if Graph.has_edge(node_improve, node) == True:
-                continue
-
-              
-            
-            Graph.add_edge(node_improve, node, fee_base_msat = 1000)
-            new_cc = nx.closeness_centrality(Graph, u=node_improve,distance="fee_base_msat")
-            new_bc = edges_betweenness_centrality(Graph, 15)
-            
-            if (node_improve, node) not in new_bc:
-                new_reward = (alpha*new_bc[(node, node_improve)] + beta*new_cc)/2
+        node = centralized[-count]
+        if node == node_improve:
+            continue
+        if Graph.has_edge(node_improve, node) == True:
+            continue
+          
+        
+        Graph.add_edge(node_improve, node, fee_base_msat = 1000)
+        new_cc = nx.closeness_centrality(Graph, u=node_improve,distance="fee_base_msat")
+        new_bc = edges_betweenness_centrality(Graph, 15)
+        
+        if (node_improve, node) not in new_bc:
+            reward = (alpha*new_bc[(node, node_improve)] + beta*new_cc)/2
+        else:
+            reward = (alpha*new_bc[(node_improve, node)] + beta*new_cc)/2
+        
+        if cycle == True:
+            if len(selected_node) != 0:
+                for node1 in selected_node:
+                    if Graph.has_edge(node,node1) == True or Graph.has_edge(node1, node) == True:
+                        cc_after.append(reward)
+                        selected_node.append(node)
+                        new_edges.append((node,node_improve))
             else:
-                new_reward = (alpha*new_bc[(node_improve, node)] + beta*new_cc)/2
-            
-            if cycle == True:
-                if len(selected_node) != 0:
-                    for node1 in selected_node:
-                        if Graph.has_edge(node,node1) == True or Graph.has_edge(node1, node) == True:
-                            max_reward = new_reward
-                            max_node = node
-                else:
-                    max_reward = new_reward
-                    max_node = node
-            else: 
-                max_reward = new_reward
-                max_node = node
-            Graph.remove_edge(node_improve, node)
-        Graph.add_edge(max_node,node_improve)
-        cc_after.append(max_reward)
-        selected_node.append(max_node)
-        new_edges.append((max_node,node_improve))
+                cc_after.append(reward)
+                selected_node.append(node)
+                new_edges.append((node,node_improve))
+        else: 
+            cc_after.append(reward)
+            selected_node.append(node)
+            new_edges.append((node,node_improve))
+        
     return selected_node, cc_after
