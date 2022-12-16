@@ -1,5 +1,8 @@
 reward
 selected_nodes
 transitivity
+reward-old
+selected_nodes-old
+transitivity-old
 progress_file
 __pycache__/
