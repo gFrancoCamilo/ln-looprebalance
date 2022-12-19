@@ -25,6 +25,18 @@ def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, beta = 0.
     cc_after = []
 
     centralized = get_k_most_centralized_nodes(Graph, 400)
+    if (Graph.has_edge(node_improve,centralized[-1]) == False):
+        Graph.add_edge(node_improve, centralized[-1], fee_base_msat = 1000)
+        new_edges.append((node_improve, centralized[-1]))
+        selected_node.append(centralized[-1])
+        new_cc = nx.closeness_centrality(Graph, u=node_improve,distance="fee_base_msat")
+        new_bc = edges_betweenness_centrality(Graph, 15)
+        if (node_improve, centralized[-1]) not in new_bc:
+            reward = (alpha*new_bc[(centralized[-1], node_improve)] + beta*new_cc)/2
+        else:
+            reward = (alpha*new_bc[(node_improve, centralized[-1])] + beta*new_cc)/2
+        cc_after.append(reward)
+        print(cc_after)
 
     while(len(new_edges) < channels):
         max_reward = 0
