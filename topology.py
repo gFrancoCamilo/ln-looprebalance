@@ -133,3 +133,14 @@ def get_k_most_centralized_nodes (Graph, k):
     centralization = dict(sorted(centralization.items(), key=lambda item: item[1]))
     centralization_list = list(centralization.keys())[-k:]
     return centralization_list
+
+def get_k_most_centralized_nodes_bc (Graph, k):
+    centralization = nx.betweenness_centrality(Graph)
+    centralization = dict(sorted(centralization.items(), key=lambda item: item[1]))
+    centralization_list = list(centralization.keys())[-k:]
+    return centralization_list
+def get_k_most_centralized_nodes_cc (Graph, k):
+    centralization = nx.closeness_centrality(Graph)
+    centralization = dict(sorted(centralization.items(), key=lambda item: item[1]))
+    centralization_list = list(centralization.keys())[-k:]
+    return centralization_list

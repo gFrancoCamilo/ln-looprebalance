@@ -66,7 +66,7 @@ def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, beta = 0.
         new_edges.append((max_node,node_improve))
     return selected_node, cc_after
 
-def degree_only (Graph, node_improve, channels, alpha = 0.5, beta = 0.5, cycle = True):
+def degree_only (Graph, node_improve, channels, parameter, alpha = 0.5, beta = 0.5, cycle = True):
     if node_improve not in Graph.nodes:
         Graph.add_node(node_improve)
     
@@ -74,10 +74,17 @@ def degree_only (Graph, node_improve, channels, alpha = 0.5, beta = 0.5, cycle =
     selected_node = []
     cc_after = []
 
-    centralized = get_k_most_centralized_nodes(Graph, 400)
+    if parameter == 'degree':
+        centralized = get_k_most_centralized_nodes(Graph, 400)
+    if parameter == 'bc':
+        centralized = get_k_most_centralized_nodes_bc(Graph, 400)
+    if parameter == 'cc':
+        centralized = get_k_most_centralized_nodes_cc(Graph, 400)
     count = 1
+    reward = 0
     while(len(new_edges) < channels):
         node = centralized[-count]
+        count += 1
         if node == node_improve:
             continue
         if Graph.has_edge(node_improve, node) == True:
@@ -86,13 +93,13 @@ def degree_only (Graph, node_improve, channels, alpha = 0.5, beta = 0.5, cycle =
         
         Graph.add_edge(node_improve, node, fee_base_msat = 1000)
         new_cc = nx.closeness_centrality(Graph, u=node_improve,distance="fee_base_msat")
-        new_bc = edges_betweenness_centrality(Graph, 15)
+        new_bc = edges_betweenness_centrality(Graph, 25)
         
         if (node_improve, node) not in new_bc:
             reward = (alpha*new_bc[(node, node_improve)] + beta*new_cc)/2
         else:
             reward = (alpha*new_bc[(node_improve, node)] + beta*new_cc)/2
-        
+
         if cycle == True:
             if len(selected_node) != 0:
                 for node1 in selected_node:
@@ -100,6 +107,8 @@ def degree_only (Graph, node_improve, channels, alpha = 0.5, beta = 0.5, cycle =
                         cc_after.append(reward)
                         selected_node.append(node)
                         new_edges.append((node,node_improve))
+                    else:
+                        Graph.remove_edge(node_improve, node)
             else:
                 cc_after.append(reward)
                 selected_node.append(node)
