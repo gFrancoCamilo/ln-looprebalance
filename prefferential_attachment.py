@@ -20,23 +20,24 @@ def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, beta = 0.
     if node_improve not in Graph.nodes:
         Graph.add_node(node_improve)
     
+    increment_shortest_path(Graph)
+    
     new_edges = []
     selected_node = []
     cc_after = []
 
     centralized = get_k_most_centralized_nodes(Graph, 400)
-    if (Graph.has_edge(node_improve,centralized[-1]) == False):
-        Graph.add_edge(node_improve, centralized[-1], fee_base_msat = 1000)
-        new_edges.append((node_improve, centralized[-1]))
-        selected_node.append(centralized[-1])
-        new_cc = nx.closeness_centrality(Graph, u=node_improve,distance="fee_base_msat")
-        new_bc = edges_betweenness_centrality(Graph, 15)
-        if (node_improve, centralized[-1]) not in new_bc:
-            reward = (alpha*new_bc[(centralized[-1], node_improve)] + beta*new_cc)/2
-        else:
-            reward = (alpha*new_bc[(node_improve, centralized[-1])] + beta*new_cc)/2
-        cc_after.append(reward)
-        print(cc_after)
+#    if (Graph.has_edge(node_improve,centralized[-1]) == False):
+#        Graph.add_edge(node_improve, centralized[-1], fee_base_msat = 1000)
+#        new_edges.append((node_improve, centralized[-1]))
+#        selected_node.append(centralized[-1])
+#        new_cc = nx.closeness_centrality(Graph, u=node_improve,distance="fee_base_msat")
+#        new_bc = edges_betweenness_centrality(Graph, 25)
+#        if (node_improve, centralized[-1]) not in new_bc:
+#            reward = (alpha*new_bc[(centralized[-1], node_improve)] + beta*new_cc)/2
+#        else:
+#            reward = (alpha*new_bc[(node_improve, centralized[-1])] + beta*new_cc)/2
+#        cc_after.append(reward)
 
     while(len(new_edges) < channels):
         max_reward = 0
@@ -49,9 +50,9 @@ def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, beta = 0.
 
               
             
-            Graph.add_edge(node_improve, node, fee_base_msat = 1000)
+            Graph.add_edge(node_improve, node, fee_base_msat = 1001)
             new_cc = nx.closeness_centrality(Graph, u=node_improve,distance="fee_base_msat")
-            new_bc = edges_betweenness_centrality(Graph, 15)
+            new_bc = edges_betweenness_centrality(Graph, 25)
             
             if (node_improve, node) not in new_bc:
                 new_reward = (alpha*new_bc[(node, node_improve)] + beta*new_cc)/2
@@ -81,6 +82,8 @@ def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, beta = 0.
 def degree_only (Graph, node_improve, channels, parameter, alpha = 0.5, beta = 0.5, cycle = True):
     if node_improve not in Graph.nodes:
         Graph.add_node(node_improve)
+
+    increment_shortest_path(Graph)
     
     new_edges = []
     selected_node = []
@@ -103,7 +106,7 @@ def degree_only (Graph, node_improve, channels, parameter, alpha = 0.5, beta = 0
             continue
           
         
-        Graph.add_edge(node_improve, node, fee_base_msat = 1000)
+        Graph.add_edge(node_improve, node, fee_base_msat = 1001)
         new_cc = nx.closeness_centrality(Graph, u=node_improve,distance="fee_base_msat")
         new_bc = edges_betweenness_centrality(Graph, 25)
         

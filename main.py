@@ -154,4 +154,4 @@ def main (result, cycle):
     nodes_file.close()
     reward_file.close()
 
-main('greedy', False)
+main('degree', True)

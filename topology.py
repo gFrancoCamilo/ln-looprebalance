@@ -144,3 +144,8 @@ def get_k_most_centralized_nodes_cc (Graph, k):
     centralization = dict(sorted(centralization.items(), key=lambda item: item[1]))
     centralization_list = list(centralization.keys())[-k:]
     return centralization_list
+def increment_shortest_path (Graph):
+    dic = nx.get_edge_attributes(Graph, "fee_base_msat")
+    for edge in dic:
+        (u, v) = edge
+        Graph[u][v]["fee_base_msat"] = dic[edge] + 1

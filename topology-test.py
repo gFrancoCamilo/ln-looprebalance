@@ -29,7 +29,7 @@ def create_graph_test(filenames, test_all = 1):
                 Graph = create_graph(file)
                 print("Created graph from file " + str(file))
         else:
-            Graph = create_graph(filenames[len(filenames) - 1])
+            Graph = create_graph(filenames[0])
             print("Created graph from file " + str(filenames[len(filenames) - 1]))    
         return Graph
     except:
@@ -91,10 +91,21 @@ def get_k_most_centralized_nodes_test (Graph, k):
 
 filenames = generate_timestamps_test()
 Graph = create_graph_test(filenames, 0)
-get_k_most_centralized_nodes_test(Graph, 50)
+#get_k_most_centralized_nodes_test(Graph, 50)
 #count_node_triangles_test(Graph)
 #start = time.time()
-#edges_betweenness_centrality_test(Graph, 15)
+dic = nx.get_edge_attributes(Graph, "fee_base_msat")
+for edge in dic:
+    (u, v) = edge
+    Graph[u][v]["fee_base_msat"] = dic[edge] + 1
+        
+edges_betweenness_centrality_test(Graph, 25)
+print(dic[('0268fb5ff483d584b81832b025b8ed122596d4b642171d71ab8b5893aa24eccece', '0383b3e460dfacc59c7b87dab8b5b72a29a481e195c85d7bfc55219ded164ad9ea')])
+print(dic[('033d8656219478701227199cbd6f670335c8d408a92ae88b962c49d4dc0e83e025', '0348cb5eb33343108bf04930c416630af5795484791035911a330dfa6964823c7a')])
+print(dic[('03ff89e6e0062dd2a798b0a9570478bb3218f72fb32bfe929418796238f854ed80', '033d8656219478701227199cbd6f670335c8d408a92ae88b962c49d4dc0e83e025')])
+print(dic[('03e5a10bd9d700cfefd89dcfb423e3b8124895feae20be70a967db4443594106e7', '03945a8a49c380f5bfe39bddd083a74d2dc4d223fbb146c8ab8bab29b154150b7e')])
+print(dic[('0382feff4b67e914bae5103b341a8f4933664306c72123fcfbcc77875240894414', '038cb1f9d4eb94d7aee59cae45bd00727e69e83f45b63c2e4dad71112af789a862')])
+#print(nx.edge_betweenness_centrality(Graph, weight='fee_base_msat'))
 #end = time.time()
 #print("Time: " + str(end-start))
 #nodes_closeness_centrality_test(Graph)
