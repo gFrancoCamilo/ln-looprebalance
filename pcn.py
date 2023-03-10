@@ -1,6 +1,6 @@
 from topology import *
 import networkx as nx
-import numpy as np
+import random
 
 def validate_graph (Graph):
     edges_to_remove = []
@@ -17,10 +17,48 @@ def set_balance (Graph, option: str = '99-1'):
             capacity = int(Graph[i][j]['capacity'])
             if option == 'half':
                 Graph[i][j]['balance'] = capacity//2
-                Graph[j][i]['balance'] = capacity//2
-            if option == '99-1':
+                Graph[j][i]['balance'] = Graph[i][j]['balance'] - capacity
+            elif option == '99-1':
+                coin = random.randint(0,1)
+                if coin == 0:
+                    Graph[i][j]['balance'] = round(0.99*capacity)
+                    Graph[j][i]['balance'] = Graph[i][j]['balance'] - capacity
+                else:
+                    Graph[j][i]['balance'] = round(0.99*capacity)
+                    Graph[i][j]['balance'] = Graph[j][i]['balance'] - capacity
+            else:
+                raise Exception ('No valid option to set balance selected')
+    return Graph
+
+def set_balance_ln (Graph, alpha: float = 0.01):
+    number_nodes = round(Graph.number_of_nodes()*alpha)
+    k_central_nodes = get_k_most_centralized_nodes (Graph, number_nodes)
+    k_central_nodes_dict = dict.fromkeys(k_central_nodes, "True")
+
+    for node in k_central_nodes:
+        for neighbor in Graph.neighbors(node):
+            if neighbor in k_central_nodes_dict:
+                Graph[node][neighbor]['balance'] = int(Graph[node][neighbor]['capacity'])//2
+                Graph[neighbor][node]['balance'] = int(Graph[node][neighbor]['capacity']) - Graph[node][neighbor]['balance'] 
+            else:
+                coin = random.randint(0,1)
+                if coin == 0:
+                    Graph[node][neighbor]['balance'] = round(0.99*int(Graph[node][neighbor]['capacity']))
+                    Graph[neighbor][node]['balance'] = int(Graph[node][neighbor]['capacity']) - Graph[node][neighbor]['balance']
+                else:
+                    Graph[neighbor][node]['balance'] = round(0.99*int(Graph[node][neighbor]['capacity']))
+                    Graph[node][neighbor]['balance'] = int(Graph[node][neighbor]['capacity']) - Graph[neighbor][node]['balance']
+    
+    for (i,j) in Graph.edges():
+        if 'balance' not in Graph[i][j]:
+            capacity = int(Graph[i][j]['capacity'])
+            coin = random.randint(0,1)
+            if coin == 0:
                 Graph[i][j]['balance'] = round(0.99*capacity)
-                Graph[j][i]['balance'] = round(0.01*capacity)
+                Graph[j][i]['balance'] = capacity - Graph[i][j]['balance']
+            else:
+                Graph[j][i]['balance'] = round(0.99*capacity)
+                Graph[i][j]['balance'] = capacity - Graph[j][i]['balance']
     return Graph
 
 def find_shortest_path (Graph, s, t, value):

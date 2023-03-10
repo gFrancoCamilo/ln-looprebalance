@@ -22,6 +22,16 @@ def make_payment_test (Graph, s,t, value):
     except:
         raise Exception ('Failed to test payment')
 
+def set_balance_ln_test (Graph, alpha: float = 0.01, debug: bool = False):
+    try:
+        Graph = set_balance_ln(Graph, alpha, True)
+        if debug == True:
+            for (i,j) in Graph.edges():
+                print("Node i balance: " + str(Graph[i][j]['balance']))
+                print("Node j balance: " + str(Graph[j][i]['balance']))
+    except:
+        raise Exception ("Failed to set ln balance")
+
 Graph = graph_names ('jul 2022')
 Graph = validate_graph(Graph)
 
@@ -30,5 +40,6 @@ v2 = np.random.choice(Graph.nodes())
 print("Chosen source: " + str(v1))
 print("Chosen destination: " + str(v2))
 
-set_balance_test(Graph)
+#set_balance_test(Graph)
+set_balance_ln_test(Graph, 0.01)
 make_payment_test(Graph, v1, v2, 100)
