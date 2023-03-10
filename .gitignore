@@ -6,3 +6,5 @@ selected_nodes-old
 transitivity-old
 progress_file
 __pycache__/
+datasets/
+ln-snapshots/
