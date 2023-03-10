@@ -26,15 +26,29 @@ def generate_timestamps ():
         timestamp_iterator = timestamp_iterator + 2*7*24*3600
     return filenames, dates
 
+def graph_names (option: str = 'jul 2022'):
+    filenames = ['./ln-snapshots/ln-topology-20210701-recovered-capacitated.gml',
+                './ln-snapshots/ln-topology-20220101-recovered-capacitated.gml',
+                './ln-snapshots/ln-topology-20220701-recovered-capacitated.gml']
+    if option == "jul 2021":
+        Graph = create_graph(filenames[0], 'gml')
+    if option == "jan 2022":
+        Graph = create_graph(filenames[1], 'gml')
+    if option == "jul 2022":
+        Graph = create_graph(filenames[2], 'gml')
+    return Graph
 
-def create_graph (filename: str):
+def create_graph (filename: str, format: str):
     """
     Reads file that contains the Lightning network graph encoded in graphml format and
     returns a NetworkX undirected graph
     """
     try:
-        Graph = nx.read_graphml(filename)
-        Graph = Graph.to_undirected()
+        if format == "gml":
+            Graph = nx.read_gml(filename)
+        else:
+            Graph = nx.read_graphml(filename)
+            Graph = Graph.to_undirected()
         return Graph
     except:
         raise Exception ('Invalid graph filename or format')

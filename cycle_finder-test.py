@@ -37,15 +37,7 @@ def find_cycle_test (Graph, node = None, channel = None, debug = False):
     except:
         raise Exception ("Error finding cycles")
 
-filenames, _ = generate_timestamps()
-print(filenames[0])
-Graph = create_graph (filenames[0])
-Graph = make_graph_directed(Graph)
+Graph = graph_names('jul 2022')
 set_balance(Graph)
 random_node, cycles = find_cycle_test(Graph, debug = True)
 make_payment(Graph, random_node, random_node, 100, path = cycles[0], debug = True)
-
-
-#for cycle in nx.simple_cycles(Graph):
-#    if random_node in cycle:
-#        print(cycle)
