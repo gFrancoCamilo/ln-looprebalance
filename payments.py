@@ -28,7 +28,7 @@ def filter_data (payments: pd.DataFrame):
 def get_end_hosts (Graph: nx.DiGraph, n: int = 4):
     end_hosts = []
     for node in Graph.nodes():
-        if Graph.degree(node) <= 4:
+        if Graph.degree(node) <= n:
             end_hosts.append(node)
     return end_hosts
 
@@ -46,3 +46,16 @@ def convert_dolars_to_satoshi (payments: list) -> list:
     for index in range(len(payments)):
         payments[index] = round(payments[index] * ONE_DOLLAR_IN_SATOSHI)
     return payments
+
+def get_payments_ln (Graph: nx.DiGraph, list_payments: list, n: int = 4):
+    end_hosts = get_end_hosts(Graph, n)
+    payments = 0
+    payments_dict = {}
+    while payments < len(list_payments):
+        source = np.random.choice(end_hosts)
+        destination = np.random.choice(end_hosts)
+        if source != destination:
+            payments_dict[(source,destination)] = list_payments[payments]
+            payments += 1
+    return payments_dict
+    
