@@ -17,15 +17,15 @@ def set_balance (Graph, option: str = '99-1'):
             capacity = int(Graph[i][j]['capacity'])
             if option == 'half':
                 Graph[i][j]['balance'] = capacity//2
-                Graph[j][i]['balance'] = Graph[i][j]['balance'] - capacity
+                Graph[j][i]['balance'] = capacity - Graph[i][j]['balance']
             elif option == '99-1':
                 coin = random.randint(0,1)
                 if coin == 0:
                     Graph[i][j]['balance'] = round(0.99*capacity)
-                    Graph[j][i]['balance'] = Graph[i][j]['balance'] - capacity
+                    Graph[j][i]['balance'] = capacity - Graph[i][j]['balance']
                 else:
                     Graph[j][i]['balance'] = round(0.99*capacity)
-                    Graph[i][j]['balance'] = Graph[j][i]['balance'] - capacity
+                    Graph[i][j]['balance'] = capacity - Graph[j][i]['balance']
             else:
                 raise Exception ('No valid option to set balance selected')
     return Graph
@@ -80,6 +80,9 @@ def make_payment (Graph, s, t, value, path = None, debug = False):
     while index < (len(hops) - 1):
         index += 1
         if value > Graph[hops[index-1]][hops[index]]['balance']:
+            if debug == True:
+                print ("Payment value: " + str(value))
+                print ("Channel balance: " + str(Graph[hops[index-1]][hops[index]]['balance']))
             raise Exception ('Not enough balance on path')
 
     index = 0
