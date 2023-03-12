@@ -36,6 +36,8 @@ def graph_names (option: str = 'jul 2022'):
         Graph = create_graph(filenames[1], 'gml')
     if option == "jul 2022":
         Graph = create_graph(filenames[2], 'gml')
+    graph_components = sorted(nx.strongly_connected_components(Graph), key=len, reverse=True)
+    Graph = Graph.subgraph(graph_components[0])
     return Graph
 
 def create_graph (filename: str, format: str):

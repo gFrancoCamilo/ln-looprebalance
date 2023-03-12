@@ -20,6 +20,7 @@ def graph_names_test (option: str):
         options = ["jul 2021", "jan 2022", "jul 2022"]
         for option in options:
             Graph = graph_names(option)
+        assert nx.is_strongly_connected(Graph) == True
         return Graph
     except:
         raise Exception ('Failed executing graph_names function in topology.py')
