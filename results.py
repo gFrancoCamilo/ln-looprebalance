@@ -5,7 +5,7 @@ from cycle_finder import *
 
 import networkx as nx
 
-def get_success_ratio (Graph: nx.DiGraph, payment_dict: dict):
+def get_success_ratio (Graph: nx.DiGraph, payment_dict: dict, debug: bool = False):
     total_payments = 0
     successful_payments = 0
     for (i,j) in payment_dict:
