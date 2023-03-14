@@ -1,6 +1,10 @@
 from results import *
 
 def get_success_ratio_test (Graph: nx.DiGraph, payment_dict: list):
+    """
+    get_success_ratio_test tests the function get_success_ratio from
+    results.py. The function also prints the returned value on the screen.
+    """
     try:
         result = get_success_ratio(Graph, payment_dict, debug = True)
         print("Payment Success Ratio: " + str(result))
