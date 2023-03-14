@@ -16,6 +16,11 @@ def generate_timestamps_test():
         raise Exception ('Failed executing generate_timestamps function in topology.py')
 
 def graph_names_test (option: str):
+    """
+    Tests the graph_names_test function from topology.py. The function
+    tests all possible options for ln graph available. It also asserts
+    that the returned Graph contains only one strongly connected component.
+    """
     try:
         options = ["jul 2021", "jan 2022", "jul 2022"]
         for option in options:

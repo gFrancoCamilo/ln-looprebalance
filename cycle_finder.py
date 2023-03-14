@@ -11,7 +11,7 @@ def find_cycle (Graph, channel, node):
     """
     try:
         """
-        As we don't want to alterate the regular Graph, we make a copy of it.
+        As we don't want to modify the regular Graph, we make a copy of it.
         Thus, we can remove the given channel without losing its attributes.
         """
         copy = Graph.copy()

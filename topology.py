@@ -27,6 +27,14 @@ def generate_timestamps ():
     return filenames, dates
 
 def graph_names (option: str = 'jul 2022'):
+    """
+    graph_names reads Lightning snapshots in gml format and returns a NetworkX graph.
+    The function offers three snapshots option from three different time-periods. The
+    first one is from July 2021, the second is from Jan 2022, and the third is from
+    July 2022. We cnsider that the snapshots are directed graphs with channel capacity
+    attributes already present. Furthermore, the function returns the highest connected
+    component of the graph.
+    """
     filenames = ['./ln-snapshots/ln-topology-20210701-recovered-capacitated.gml',
                 './ln-snapshots/ln-topology-20220101-recovered-capacitated.gml',
                 './ln-snapshots/ln-topology-20220701-recovered-capacitated.gml']
@@ -36,6 +44,8 @@ def graph_names (option: str = 'jul 2022'):
         Graph = create_graph(filenames[1], 'gml')
     if option == "jul 2022":
         Graph = create_graph(filenames[2], 'gml')
+
+    """Removing small graph-components"""
     graph_components = sorted(nx.strongly_connected_components(Graph), key=len, reverse=True)
     Graph = Graph.subgraph(graph_components[0])
     return Graph
@@ -56,6 +66,10 @@ def create_graph (filename: str, format: str):
         raise Exception ('Invalid graph filename or format')
 
 def count_node_triangles (Graph, nodes = None):
+    """
+    count_node_triangles counts the number of triangles a node is part of in the network.
+    It receives the network Graph and the node to evaluate the number of triangles.
+    """
     try:
         return nx.triangles(Graph, nodes)
     except:
@@ -145,22 +159,39 @@ def triadic_census (Graph):
         raise Exception ('Invalid Graph. Could not compute the triadic census')
 
 def get_k_most_centralized_nodes (Graph, k):
+    """
+    get_k_most_centralized_nodes returns the k nodes with highest degree in the
+    network.
+    """
     centralization = nx.degree_centrality(Graph)
     centralization = dict(sorted(centralization.items(), key=lambda item: item[1]))
     centralization_list = list(centralization.keys())[-k:]
     return centralization_list
 
 def get_k_most_centralized_nodes_bc (Graph, k):
+    """
+    get_k_most_centralized_nodes returns the k nodes with highest betweenness centrality
+    in the network.
+    """
     centralization = nx.betweenness_centrality(Graph)
     centralization = dict(sorted(centralization.items(), key=lambda item: item[1]))
     centralization_list = list(centralization.keys())[-k:]
     return centralization_list
+
 def get_k_most_centralized_nodes_cc (Graph, k):
+    """
+    get_k_most_centralized_nodes returns the k nodes with highest closeness centrality
+    in the network.
+    """
     centralization = nx.closeness_centrality(Graph)
     centralization = dict(sorted(centralization.items(), key=lambda item: item[1]))
     centralization_list = list(centralization.keys())[-k:]
     return centralization_list
+
 def increment_shortest_path (Graph):
+    """
+    increment_shortest_path increments the attribute fee_base_msat in 1.
+    """
     dic = nx.get_edge_attributes(Graph, "fee_base_msat")
     for edge in dic:
         (u, v) = edge
