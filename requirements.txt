@@ -2,3 +2,4 @@ pandas
 scipy
 networkx
 numpy
+tqdm

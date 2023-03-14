@@ -27,7 +27,8 @@ def filter_data (payments: pd.DataFrame):
 
 def get_end_hosts (Graph: nx.DiGraph, n: int = 4):
     end_hosts = []
-    for node in Graph.nodes():
+    desc = 'Selecting end hosts to issue payments'
+    for node in tqdm(Graph.nodes(), desc=desc):
         if Graph.degree(node) <= n:
             end_hosts.append(node)
     return end_hosts
@@ -43,7 +44,8 @@ def choose_payments (payment_data: pd.DataFrame, n_payments: int = 10):
     return payments_satoshis
 
 def convert_dolars_to_satoshi (payments: list) -> list:
-    for index in range(len(payments)):
+    desc = 'Converting from dolar to satoshi using exchange rate 1->' + str(ONE_DOLLAR_IN_SATOSHI)
+    for index in tqdm(range(len(payments)), desc=desc):
         payments[index] = round(payments[index] * ONE_DOLLAR_IN_SATOSHI)
     return payments
 

@@ -8,7 +8,8 @@ import networkx as nx
 def get_success_ratio (Graph: nx.DiGraph, payment_dict: dict, debug: bool = False):
     total_payments = 0
     successful_payments = 0
-    for (i,j) in payment_dict:
+    desc = 'Issuing payments'
+    for (i,j) in tqdm(payment_dict, desc):
         try:
             make_payment(Graph, i, j, payment_dict[i,j])
             successful_payments += 1

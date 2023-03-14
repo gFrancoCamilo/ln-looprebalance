@@ -1,10 +1,12 @@
 from topology import *
 import networkx as nx
 import random
+from tqdm import tqdm
 
 def validate_graph (Graph):
     edges_to_remove = []
-    for (i,j) in Graph.edges:
+    print ('Validating Graph')
+    for (i,j) in tqdm(Graph.edges):
         if i not in Graph.neighbors(j):
             edges_to_remove.append((i,j))
     for (i,j) in edges_to_remove:
@@ -12,7 +14,8 @@ def validate_graph (Graph):
     return Graph
 
 def set_balance (Graph, option: str = '99-1'):
-    for (i,j) in Graph.edges:
+    desc = 'Setting balance with option ' + str(option)
+    for (i,j) in tqdm(Graph.edges, desc=desc):
         if 'balance' not in Graph[i][j]:
             capacity = int(Graph[i][j]['capacity'])
             if option == 'half':
@@ -35,7 +38,8 @@ def set_balance_ln (Graph, alpha: float = 0.01):
     k_central_nodes = get_k_most_centralized_nodes (Graph, number_nodes)
     k_central_nodes_dict = dict.fromkeys(k_central_nodes, "True")
 
-    for node in k_central_nodes:
+    desc = 'Setting balance in the most central nodes'
+    for node in tqdm(k_central_nodes, desc=desc):
         for neighbor in Graph.neighbors(node):
             if neighbor in k_central_nodes_dict:
                 Graph[node][neighbor]['balance'] = int(Graph[node][neighbor]['capacity'])//2
@@ -49,7 +53,8 @@ def set_balance_ln (Graph, alpha: float = 0.01):
                     Graph[neighbor][node]['balance'] = round(0.99*int(Graph[node][neighbor]['capacity']))
                     Graph[node][neighbor]['balance'] = int(Graph[node][neighbor]['capacity']) - Graph[neighbor][node]['balance']
     
-    for (i,j) in Graph.edges():
+    desc = 'Setting balance in the rest of the network'
+    for (i,j) in tqdm(Graph.edges(), desc=desc):
         if 'balance' not in Graph[i][j]:
             capacity = int(Graph[i][j]['capacity'])
             coin = random.randint(0,1)
