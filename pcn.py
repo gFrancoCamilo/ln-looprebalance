@@ -4,6 +4,11 @@ import random
 from tqdm import tqdm
 
 def validate_graph (Graph):
+    """
+    validate_graph checks if for every (i,j) edge in the network
+    graph, another (j,i) edge exists. If this rule is broken, the
+    (i,j) edge is removed from the graph.
+    """
     edges_to_remove = []
     print ('Validating Graph')
     for (i,j) in tqdm(Graph.edges):
@@ -14,6 +19,19 @@ def validate_graph (Graph):
     return Graph
 
 def set_balance (Graph, option: str = '99-1'):
+    """
+    set_balance initiates the balance for every channel on the network.
+    We define channel capacity as the funds collectively locked by
+    both parties in the channel. On the other hand, balance is defines
+    how the channel capacity is splitted between both nodes in a channel.
+    Thus, the capacity c_ij of a channeel (i,j) is the sum b(i)+b(j) of the
+    balances of each node. The function presents two option: half and 99-1.
+    If half is selected, the balance of every channel is splitted in half,
+    i.e., if a channel (i,j) has capacity 10, each node is assigned balance
+    b(i) = b(j) = 5. If the option 99-1 is selected, the algorithm sorts one
+    of the nodes and assigns them 99% of the channel capacity and 1% to the
+    other party.
+    """
     desc = 'Setting balance with option ' + str(option)
     for (i,j) in tqdm(Graph.edges, desc=desc):
         if 'balance' not in Graph[i][j]:
@@ -34,6 +52,13 @@ def set_balance (Graph, option: str = '99-1'):
     return Graph
 
 def set_balance_ln (Graph, alpha: float = 0.01):
+    """
+    set balance_ln initializes the network balance simulating
+    a real-world scenario. Basically, central channels, i.e.,
+    channels between highest degree nodes, are kept balanced
+    half-half. Meanwhile, the rest of the nodes is assigned a
+    balance of 99-1 in its channels.
+    """
     number_nodes = round(Graph.number_of_nodes()*alpha)
     k_central_nodes = get_k_most_centralized_nodes (Graph, number_nodes)
     k_central_nodes_dict = dict.fromkeys(k_central_nodes, "True")
@@ -67,9 +92,22 @@ def set_balance_ln (Graph, alpha: float = 0.01):
     return Graph
 
 def find_shortest_path (Graph, s, t, value):
+    """
+    find_shortest_path returns the shortest path between a source and a
+    destination. Following BOLT #7 (https://github.com/lightning/bolts/blob/master/07-routing-gossip.md#htlc-fees),
+    we use Djikstra algorithm with weight equal fb + v*fr, where fb is
+    the fixed base fee of an edge, v is the value of the payment in
+    satoshis and fr is the fee rate of the channel.
+    """
     return nx.shortest_path(Graph, source = s, target = t, weight = 'fee_base_msat' + (value*'fee_proportional_millionths'/1000000))
 
 def make_payment (Graph, s, t, value, path = None, debug = False):
+    """
+    make_payment attemps to issue a payment of a certain value from
+    a source node to a destination node. The function implements the
+    PCN routing-logic where each payment reduces the capacity of a
+    channel of forwarding future payments. 
+    """
     if path == None:
         hops = nx.shortest_path(Graph, s, t)
     else:
@@ -109,6 +147,36 @@ def make_payment (Graph, s, t, value, path = None, debug = False):
             raise Exception ('Could not issue payment')
 
 def get_node_balance (Graph, node, debug = False):
+    """
+    get_node balance computes the balance of a given node in the network.
+    The node balance nb_i of a node i is defined as the sum of the balance
+    of each channel i participates. As an example, if i has 3 channel (i,j),
+    (i,k), and (i,l), with nodes j, k, and l, respectivaly, and has a balance
+    b_1(i), b_2(i), b_3(i) in each channel, the node balance of i nb_i = 
+    b_1(i) + b_2(i) + b_3(i). Illustrating
+
+    ┌─────┐
+    │     │
+    │  L  │     Each arrow represents a channel.
+    │     │     Each square represents a node.
+    └┬────┘     The number over each channel represents the balance of the channel.
+    2│  ▲       nb_I = 7 + 3 + 4 = 14
+     │  │
+     ▼  │7
+    ┌───┴─┐ 3     ┌─────┐
+    │     ├──────►│     │
+    │  I  │       │  J  │
+    │     │◄──────┤     │
+    └┬────┘     5 └─────┘
+    4│  ▲
+     │  │
+     ▼  │1
+    ┌───┴─┐
+    │     │
+    │  K  │
+    │     │
+    └─────┘
+    """
     try:
         neighbors = [n for n in Graph.neighbors(node)]
         node_balance = 0
