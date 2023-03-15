@@ -3,6 +3,11 @@ from topology import *
 import numpy as np
 
 def set_balance_test (Graph, option: str = '99-1'):
+    """
+    set_balance_test tests the function set_balance in pcn.py.
+    Given the chosen option, it verifies if the returned Graph
+    initialized channel balances correctly.
+    """
     Graph = set_balance(Graph)
     for (i,j) in Graph.edges:
         try:
@@ -16,6 +21,11 @@ def set_balance_test (Graph, option: str = '99-1'):
             raise Exception ("Failed to set balance")
 
 def make_payment_test (Graph, s,t, value):
+    """
+    make_payment_test tests the function make_payment from pcn.py.
+    The function tries to issue a payment of a given value from a
+    given source-destination pair.
+    """
     Graph = set_balance(Graph)
     try:
         make_payment(Graph, s, t, value, debug = True)
@@ -23,6 +33,9 @@ def make_payment_test (Graph, s,t, value):
         raise Exception ('Failed to test payment')
 
 def set_balance_ln_test (Graph, alpha: float = 0.01, debug: bool = False):
+    """
+    set_balance_ln_test tests the function set_balance_ln in pcn.py.
+    """
     try:
         Graph = set_balance_ln(Graph, alpha, True)
         if debug == True:
