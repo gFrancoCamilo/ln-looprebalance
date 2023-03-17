@@ -103,9 +103,19 @@ def get_k_most_centralized_nodes_test (Graph, k):
     except:
         raise Exception ('Failed to get most centralized nodes')
 
-
+def snowball_sample_test (Graph, node = None, size = 200):
+    """
+    snowball_sample_test tests snowball_sample from topology.py
+    """
+    try:
+        Graph = snowball_sample(Graph, 'random', size)
+        print("Number of nodes: " + str(Graph.number_of_nodes()))
+        print("Number of edges: " + str(Graph.number_of_edges()))
+    except:
+        raise Exception ("Could not sample graph")
 
 Graph = graph_names_test('jul 2022')
+snowball_sample_test (Graph)
 #filenames = generate_timestamps_test()
 #Graph = create_graph_test(filenames, 0)
 #get_k_most_centralized_nodes_test(Graph, 50)

@@ -1,6 +1,8 @@
 import networkx as nx
 import datetime
 import itertools
+import queue
+import numpy as np
 from multiprocessing import Pool
 
 
@@ -196,3 +198,36 @@ def increment_shortest_path (Graph):
     for edge in dic:
         (u, v) = edge
         Graph[u][v]["fee_base_msat"] = dic[edge] + 1
+
+def snowball_sample (Graph, node = None, size = 200):
+    """
+    snowball_sample uses snowball sampling technique to sample the original Lightning
+    graph. It receives the original graph, a node to kick off the algorithm and the
+    maximum size of the sampled graph. If no node is passed as argument, it selects the
+    highest degree node to start the algorithm. If random is passed, it randomly selects
+    a node from the graph.
+    """
+    copy = Graph.copy()
+    if node == 'random':
+        node = np.random.choice(copy.nodes())
+    if node == None:
+        node = max(copy.nodes(), key=lambda node: Graph.degree(node))
+    if Graph.number_of_nodes() < size:
+        return list()
+    q = queue.Queue()
+    q.put(node)
+    subgraph = list()
+    subgraph.append(node)
+    while not q.empty():
+        for node in copy.neighbors(q.get()):
+            if len(subgraph) < size:
+                q.put(node)
+                subgraph.append(node)
+            else:
+                break     
+    remaining_nodes = []       
+    for node in copy.nodes():
+        if node not in subgraph:
+            remaining_nodes.append(node)
+    copy.remove_nodes_from(remaining_nodes)
+    return copy
