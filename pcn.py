@@ -1,7 +1,9 @@
 from topology import *
 import networkx as nx
 import random
+import copy
 from tqdm import tqdm
+
 
 def validate_graph (Graph):
     """
@@ -10,8 +12,8 @@ def validate_graph (Graph):
     (i,j) edge is removed from the graph.
     """
     edges_to_remove = []
-    print ('Validating Graph')
-    for (i,j) in tqdm(Graph.edges):
+    desc = 'Validating Graph'
+    for (i,j) in tqdm(Graph.edges, desc=desc):
         if i not in Graph.neighbors(j):
             edges_to_remove.append((i,j))
     for (i,j) in edges_to_remove:
@@ -99,7 +101,17 @@ def find_shortest_path (Graph, s, t, value):
     the fixed base fee of an edge, v is the value of the payment in
     satoshis and fr is the fee rate of the channel.
     """
-    return nx.shortest_path(Graph, source = s, target = t, weight = 'fee_base_msat' + (value*'fee_proportional_millionths'/1000000))
+    return nx.shortest_path(Graph, source = s, target = t, weight = 'fee')
+
+def make_graph_payment (Graph: nx.DiGraph, value: int) -> nx.DiGraph:
+    Graph_copy = Graph.copy()
+
+    for (i,j) in Graph.edges:
+        fee_base = int(Graph[i][j]['fee_base_msat'])
+        fee_rate = int(Graph[i][j]['fee_proportional_millionths'])
+        Graph_copy[i][j]['fee'] = round(fee_base + value*(fee_rate/1000000))
+    
+    return Graph_copy
 
 def make_payment (Graph, s, t, value, path = None, debug = False):
     """
@@ -108,11 +120,16 @@ def make_payment (Graph, s, t, value, path = None, debug = False):
     PCN routing-logic where each payment reduces the capacity of a
     channel of forwarding future payments. 
     """
+
+    Graph_copy = make_graph_payment(Graph, value)
+    
     if path == None:
-        hops = nx.shortest_path(Graph, s, t)
+        hops = find_shortest_path(Graph_copy, s, t, value)
     else:
         hops = path
     
+    del(Graph_copy)
+
     if len(hops) == 0:
         raise Exception ('Path is empty')
 
@@ -145,6 +162,67 @@ def make_payment (Graph, s, t, value, path = None, debug = False):
                     print("Balance after channel" + str((hops[index],hops[index-1])) + ":" + str(Graph[hops[index]][hops[index-1]]['balance']))
         except:
             raise Exception ('Could not issue payment')
+
+def make_payment_lnd (Graph: nx.DiGraph, source, target, value: int, debug: bool = False):
+    """copy holds a copy of the Graph so the original is not modified"""
+    graph_copy = make_graph_payment(Graph, value)
+    
+    """If there is no path from source to destination, it is useless to attempt a payment"""
+    if nx.has_path (graph_copy, source, target) == False:
+        raise Exception ('No path between source and destination available')
+    
+    """If source node attempts to issue a payment higher than its local balance, it will fail"""
+    if value > get_node_balance(graph_copy, source):
+        raise Exception ('Local balance is insufficient to make payment')
+    
+    paths_tried = 0
+
+    while (nx.has_path(graph_copy,source,target) and paths_tried < 50):
+        """index will iterate through the hops"""
+        index = 0
+
+        """try_another_path will indicate if the source needs to find another path to destination"""
+        try_another_path = False
+
+        hops = find_shortest_path(graph_copy, source, target, value)
+
+        while index < (len(hops) - 1):
+            index += 1
+            if value > graph_copy[hops[index-1]][hops[index]]['balance']:
+                graph_copy.remove_edge(hops[index-1],hops[index])
+                try_another_path = True
+                if debug == True:
+                    print ("Payment value: " + str(value))
+                    print ("Channel balance: " + str(Graph[hops[index-1]][hops[index]]['balance']))
+                break
+        
+        paths_tried += 1
+
+        if try_another_path == False:
+            break
+    
+    if try_another_path == True:
+        raise Exception ('No path found')
+    
+    index = 0
+    while index < (len(hops) - 1):
+        index += 1
+        try:
+            if Graph[hops[index-1]][hops[index]]['balance'] - value < 0:
+                raise Exception ('Out of funds')
+            else:
+                if debug == True:
+                    print("\nBalance before channel" + str((hops[index-1],hops[index])) + ":" + str(Graph[hops[index-1]][hops[index]]['balance']))
+                    print("Balance before channel" + str((hops[index],hops[index-1])) + ":" + str(Graph[hops[index]][hops[index-1]]['balance']))
+                Graph[hops[index-1]][hops[index]]['balance'] = Graph[hops[index-1]][hops[index]]['balance'] - value
+                Graph[hops[index]][hops[index-1]]['balance'] = Graph[hops[index]][hops[index-1]]['balance'] + value
+                if debug == True:
+                    print("Balance after channel" + str((hops[index-1],hops[index])) + ":" + str(Graph[hops[index-1]][hops[index]]['balance']))    
+                    print("Balance after channel" + str((hops[index],hops[index-1])) + ":" + str(Graph[hops[index]][hops[index-1]]['balance']))
+        except:
+            raise Exception ('Could not issue payment')
+
+
 
 def get_node_balance (Graph, node, debug = False):
     """
