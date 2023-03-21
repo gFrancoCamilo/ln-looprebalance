@@ -91,7 +91,8 @@ def get_payments_ln (Graph: nx.DiGraph, list_payments: list, n: int = 4):
     while payments < len(list_payments):
         source = np.random.choice(end_hosts)
         destination = np.random.choice(end_hosts)
-        if source != destination:
+        source_node_balance = get_node_balance(Graph, source)
+        if source_node_balance > list_payments[payments] and source != destination:
             payments_dict[(source,destination)] = list_payments[payments]
             payments += 1
     return payments_dict
