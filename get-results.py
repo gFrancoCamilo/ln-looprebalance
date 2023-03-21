@@ -29,7 +29,8 @@ def cli():
             help='Date of lighting snapshot to be used in the simulation. Only used with lightning topology.')
 @click.option('-pay','--payment_method', default='ripple', type=click.Choice(['ripple','credit-card'], case_sensitive=False),
             help='Dataset used to simulate payment in the network.')
-def simulate_success_ratio (balance, balance_parameter, number_payments, topology, nodes, alpha, beta, gamma, k, p, m, date, payment_method):
+@click.option('--lnd', is_flag=True, default=True, help='Payment routing follows a trial-and-error model')
+def simulate_success_ratio (balance, balance_parameter, number_payments, topology, nodes, alpha, beta, gamma, k, p, m, date, payment_method, lnd):
     results = []
     if topology == 'lightning':
         Graph = graph_names(date)
@@ -40,8 +41,7 @@ def simulate_success_ratio (balance, balance_parameter, number_payments, topolog
         payment_dataset = get_payment_dataset(payment_method)
         payment_list = choose_payments(payment_dataset, number_payments)
         payment_dict = get_payments_ln(Graph, payment_list)
-        for i in range(10):
-            results.append(get_success_ratio(Graph, payment_dict))
+        return get_success_ratio(Graph, payment_dict, lnd=lnd)
 
 
 if __name__ == '__main__':
