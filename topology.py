@@ -190,6 +190,17 @@ def get_k_most_centralized_nodes_cc (Graph, k):
     centralization_list = list(centralization.keys())[-k:]
     return centralization_list
 
+def get_k_most_centralized_edges_bc (Graph: nx.DiGraph, k: int):
+    """
+    get_k_most_centralized_edges_bc returns the k edges with highest betweenness centrality
+    in the network.
+    """
+    centralization = nx.edge_betweenness_centrality(Graph)
+    centralization = dict(sorted(centralization.items(), key=lambda item: item[1]))
+    centralization_list = list(centralization.keys())[-k:]
+    return centralization_list
+
+
 def increment_shortest_path (Graph):
     """
     increment_shortest_path increments the attribute fee_base_msat in 1.
