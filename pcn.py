@@ -104,6 +104,13 @@ def find_shortest_path (Graph, s, t, value):
     return nx.shortest_path(Graph, source = s, target = t, weight = 'fee')
 
 def make_graph_payment (Graph: nx.DiGraph, value: int) -> nx.DiGraph:
+    """
+    make_graph_payment transforms the regular network graph into a payment graph.
+    As payment fees vary in relation to the payment values, we set a new attribute
+    to the graph that provides the fee amount that a user will have to pay to route
+    the payment through that channel. This payment graph will then be used to compute
+    the shortest path that the user can use.
+    """
     Graph_copy = Graph.copy()
 
     for (i,j) in Graph.edges:
@@ -128,8 +135,10 @@ def make_payment (Graph, s, t, value, path = None, debug = False):
     else:
         hops = path
     
+    """After finding the shortest path, the graph_copy is useless to us as we change the original Graph"""
     del(Graph_copy)
 
+    """Check if there is a path to route"""
     if len(hops) == 0:
         raise Exception ('Path is empty')
 
@@ -186,6 +195,7 @@ def make_payment_lnd (Graph: nx.DiGraph, source, target, value: int, debug: bool
 
         hops = find_shortest_path(graph_copy, source, target, value)
 
+        """If a channel can not be used to route the payment, we remove the edge and retry the Dijkstra algorithm"""
         while index < (len(hops) - 1):
             index += 1
             if value > graph_copy[hops[index-1]][hops[index]]['balance']:
