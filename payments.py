@@ -37,7 +37,7 @@ def filter_data (payments: pd.DataFrame):
     payments = payments[(np.abs(stats.zscore(payments)) < 3)]
     return payments
 
-def get_end_hosts (Graph: nx.DiGraph, n: int = 4):
+def get_end_hosts (Graph: nx.DiGraph, n: int = 7):
     """
     get_end_hosts selects possible end-hosts to issue payments in the network.
     As most of the payments in PCNs come from low-degree nodes, we get nodes that
@@ -77,7 +77,7 @@ def convert_dolars_to_satoshi (payments: list) -> list:
         payments[index] = round(payments[index] * ONE_DOLLAR_IN_SATOSHI)
     return payments
 
-def get_payments_ln (Graph: nx.DiGraph, list_payments: list, n: int = 4):
+def get_payments_ln (Graph: nx.DiGraph, list_payments: list, n: int = 7):
     """
     get_payments_ln selects a random pair of end-hosts to act as sender-receiver
     and associates it with a payment to issui in the simulation. The function receives
@@ -88,6 +88,7 @@ def get_payments_ln (Graph: nx.DiGraph, list_payments: list, n: int = 4):
     end_hosts = get_end_hosts(Graph, n)
     payments = 0
     payments_dict = {}
+    print ("Attributing selected payments to selected end-hosts. This may take a while...")
     while payments < len(list_payments):
         source = np.random.choice(end_hosts)
         destination = np.random.choice(end_hosts)
