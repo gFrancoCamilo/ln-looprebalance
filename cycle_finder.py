@@ -1,6 +1,7 @@
 import networkx as nx
+from pcn import *
 
-def find_cycle (Graph, channel, node):
+def find_cycle (Graph, channel, node, value=500):
     """
     find_cycle finds a cycle that a given node is inserted in.
     The function receives a node that in and the channel that is
@@ -15,6 +16,7 @@ def find_cycle (Graph, channel, node):
         Thus, we can remove the given channel without losing its attributes.
         """
         copy = Graph.copy()
+        copy = make_graph_payment(Graph, value)
         (i,j) = channel
         copy.remove_edge(i,j)
         if node == i:
@@ -24,10 +26,12 @@ def find_cycle (Graph, channel, node):
         cycles = []
         neighbors = [n for n in copy[node]]
         for neighbor in neighbors:
-            cycles.append(nx.shortest_path(copy, neighbor, destination, weight = 'fee_proportional_millionths'))
+            cycles.append(find_shortest_path(copy, neighbor, destination))
         for cycle in cycles:
             cycle.insert(0, node)
             cycle.append(node)
+        if len(cycles) > 100:
+            return cycles[:100]
         return cycles
     except:
         raise Exception ("Could not find cycles")
