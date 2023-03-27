@@ -37,7 +37,7 @@ def set_balance_ln_test (Graph, alpha: float = 0.01, debug: bool = False):
     set_balance_ln_test tests the function set_balance_ln in pcn.py.
     """
     try:
-        Graph = set_balance_ln(Graph, alpha, True)
+        Graph = set_balance_ln(Graph, alpha)
         if debug == True:
             for (i,j) in Graph.edges():
                 print("Node i balance: " + str(Graph[i][j]['balance']))
