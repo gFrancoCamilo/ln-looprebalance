@@ -4,7 +4,6 @@ import random
 import copy
 from tqdm import tqdm
 
-
 def validate_graph (Graph):
     """
     validate_graph checks if for every (i,j) edge in the network
@@ -40,15 +39,21 @@ def set_balance (Graph, option: str = '99-1'):
             capacity = int(Graph[i][j]['capacity'])
             if option == 'half':
                 Graph[i][j]['balance'] = capacity//2
+                Graph[i][j]['payments'] = []
                 Graph[j][i]['balance'] = capacity - Graph[i][j]['balance']
+                Graph[j][i]['payments'] = []
             elif option == '99-1':
                 coin = random.randint(0,1)
                 if coin == 0:
                     Graph[i][j]['balance'] = round(0.99*capacity)
+                    Graph[i][j]['payments'] = []
                     Graph[j][i]['balance'] = capacity - Graph[i][j]['balance']
+                    Graph[j][i]['payments'] = []
                 else:
                     Graph[j][i]['balance'] = round(0.99*capacity)
+                    Graph[i][j]['payments'] = []
                     Graph[i][j]['balance'] = capacity - Graph[j][i]['balance']
+                    Graph[j][i]['payments'] = []
             else:
                 raise Exception ('No valid option to set balance selected')
     return Graph
@@ -70,15 +75,21 @@ def set_balance_ln (Graph, alpha: float = 0.01):
         for neighbor in Graph.neighbors(node):
             if neighbor in k_central_nodes_dict:
                 Graph[node][neighbor]['balance'] = int(Graph[node][neighbor]['capacity'])//2
+                Graph[node][neighbor]['payments'] = []
                 Graph[neighbor][node]['balance'] = int(Graph[node][neighbor]['capacity']) - Graph[node][neighbor]['balance'] 
+                Graph[neighbor][node]['payments'] = []
             else:
                 coin = random.randint(0,1)
                 if coin == 0:
                     Graph[node][neighbor]['balance'] = round(0.99*int(Graph[node][neighbor]['capacity']))
+                    Graph[node][neighbor]['payments'] = []
                     Graph[neighbor][node]['balance'] = int(Graph[node][neighbor]['capacity']) - Graph[node][neighbor]['balance']
+                    Graph[neighbor][node]['payments'] = []
                 else:
                     Graph[neighbor][node]['balance'] = round(0.99*int(Graph[node][neighbor]['capacity']))
+                    Graph[neighbor][node]['payments'] = []
                     Graph[node][neighbor]['balance'] = int(Graph[node][neighbor]['capacity']) - Graph[neighbor][node]['balance']
+                    Graph[node][neighbor]['payments'] = []
     
     desc = 'Setting balance in the rest of the network'
     for (i,j) in tqdm(Graph.edges(), desc=desc):
@@ -87,13 +98,17 @@ def set_balance_ln (Graph, alpha: float = 0.01):
             coin = random.randint(0,1)
             if coin == 0:
                 Graph[i][j]['balance'] = round(0.99*capacity)
+                Graph[i][j]['payments'] = []
                 Graph[j][i]['balance'] = capacity - Graph[i][j]['balance']
+                Graph[j][i]['payments'] = []
             else:
                 Graph[j][i]['balance'] = round(0.99*capacity)
+                Graph[j][i]['payments'] = []
                 Graph[i][j]['balance'] = capacity - Graph[j][i]['balance']
+                Graph[i][j]['payments'] = []
     return Graph
 
-def find_shortest_path (Graph, s, t, value):
+def find_shortest_path (Graph, s, t):
     """
     find_shortest_path returns the shortest path between a source and a
     destination. Following BOLT #7 (https://github.com/lightning/bolts/blob/master/07-routing-gossip.md#htlc-fees),
@@ -131,7 +146,7 @@ def make_payment (Graph, s, t, value, path = None, debug = False):
     Graph_copy = make_graph_payment(Graph, value)
     
     if path == None:
-        hops = find_shortest_path(Graph_copy, s, t, value)
+        hops = find_shortest_path(Graph_copy, s, t)
     else:
         hops = path
     
@@ -161,14 +176,11 @@ def make_payment (Graph, s, t, value, path = None, debug = False):
             if Graph[hops[index-1]][hops[index]]['balance'] - value < 0:
                 raise Exception ('Out of funds')
             else:
-                if debug == True:
-                    print("\nBalance before channel" + str((hops[index-1],hops[index])) + ":" + str(Graph[hops[index-1]][hops[index]]['balance']))
-                    print("Balance before channel" + str((hops[index],hops[index-1])) + ":" + str(Graph[hops[index]][hops[index-1]]['balance']))
                 Graph[hops[index-1]][hops[index]]['balance'] = Graph[hops[index-1]][hops[index]]['balance'] - value
                 Graph[hops[index]][hops[index-1]]['balance'] = Graph[hops[index]][hops[index-1]]['balance'] + value
-                if debug == True:
-                    print("Balance after channel" + str((hops[index-1],hops[index])) + ":" + str(Graph[hops[index-1]][hops[index]]['balance']))    
-                    print("Balance after channel" + str((hops[index],hops[index-1])) + ":" + str(Graph[hops[index]][hops[index-1]]['balance']))
+
+                Graph[hops[index-1]][hops[index]]['payments'].append(value*(-1))
+                Graph[hops[index]][hops[index-1]]['payments'].append(value)
         except:
             raise Exception ('Could not issue payment')
 
@@ -193,7 +205,7 @@ def make_payment_lnd (Graph: nx.DiGraph, source, target, value: int, debug: bool
         """try_another_path will indicate if the source needs to find another path to destination"""
         try_another_path = False
 
-        hops = find_shortest_path(graph_copy, source, target, value)
+        hops = find_shortest_path(graph_copy, source, target)
 
         """If a channel can not be used to route the payment, we remove the edge and retry the Dijkstra algorithm"""
         while index < (len(hops) - 1):
@@ -201,9 +213,6 @@ def make_payment_lnd (Graph: nx.DiGraph, source, target, value: int, debug: bool
             if value > graph_copy[hops[index-1]][hops[index]]['balance']:
                 graph_copy.remove_edge(hops[index-1],hops[index])
                 try_another_path = True
-                if debug == True:
-                    print ("Payment value: " + str(value))
-                    print ("Channel balance: " + str(Graph[hops[index-1]][hops[index]]['balance']))
                 break
         
         paths_tried += 1
@@ -221,14 +230,12 @@ def make_payment_lnd (Graph: nx.DiGraph, source, target, value: int, debug: bool
             if Graph[hops[index-1]][hops[index]]['balance'] - value < 0:
                 raise Exception ('Out of funds')
             else:
-                if debug == True:
-                    print("\nBalance before channel" + str((hops[index-1],hops[index])) + ":" + str(Graph[hops[index-1]][hops[index]]['balance']))
-                    print("Balance before channel" + str((hops[index],hops[index-1])) + ":" + str(Graph[hops[index]][hops[index-1]]['balance']))
                 Graph[hops[index-1]][hops[index]]['balance'] = Graph[hops[index-1]][hops[index]]['balance'] - value
                 Graph[hops[index]][hops[index-1]]['balance'] = Graph[hops[index]][hops[index-1]]['balance'] + value
-                if debug == True:
-                    print("Balance after channel" + str((hops[index-1],hops[index])) + ":" + str(Graph[hops[index-1]][hops[index]]['balance']))    
-                    print("Balance after channel" + str((hops[index],hops[index-1])) + ":" + str(Graph[hops[index]][hops[index-1]]['balance']))
+
+                Graph[hops[index-1]][hops[index]]['payments'].append(value*(-1))
+                Graph[hops[index]][hops[index-1]]['payments'].append(value)
+
         except:
             raise Exception ('Could not issue payment')
 
