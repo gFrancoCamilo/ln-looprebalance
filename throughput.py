@@ -8,46 +8,36 @@ Defines a TimeWindow class that is used to compute the throughput that
 passes through a node in the network. The idea is to use this information
 to perform a demand-based rebalance.
 """
-class TimeWindow:
-    def __init__(self, event: threading.Event, max_size: int = 5) -> None:
-        
-        """Defines the current size of the time window"""
-        self.size = max_size
-
-        """Defines the maximum size of the time window"""
-        self.max_size = max_size
-
-        """Stores the values of each payment that has arrived at a certain node"""
-        self.payment_values = []
-
-        """Stores the throughput in satoshis/s in the current time window"""
-        self.throughput = 0
-
-        """Runs the window routine as a thread"""
-        thread = threading.Thread(target = self.window_routine, args=(event,))
-        thread.start()
+def init_window(Graph, channel: tuple, event: threading.Event, size: int = 5) -> None:
+    """Runs the window routine as a thread"""
+    (i,j) = channel
+    thread = threading.Thread(target = window_routine, args=(event, Graph, channel, size,))
+    thread.start()
     
-    def window_routine (self, event):
-        while True:
+def window_routine (event: threading.Event, Graph: nx.DiGraph, channel, size):
+    last_analyzed = 0
+    while True:
+        """Check if payment arrived"""
+        throughput, last_analyzed = compute_throughput(Graph, channel, size, last_analyzed)
 
-            """Check if payment arrived"""
-            self.throughput = self.compute_throughput()
+        """Check again next window"""
+        time.sleep(size)
 
-            """Check again next window"""
-            time.sleep(self.size)
+        """Check for stop"""
+        if event.is_set():
+            (i,j) = channel
+            break
 
-            """Check for stop"""
-            if event.is_set():
-                break
-    
-    """Computes throughput of the node being analyzed"""
-    def compute_throughput (self) -> int:
-        if len(self.payment_values) == 0:
-            return 0
+"""Computes throughput of the node being analyzed"""
+def compute_throughput (Graph: nx.DiGraph, channel, size: int, last_analyzed) -> int:
+    (i,j) = channel
+    start = last_analyzed
+    if len(Graph[i][j]['payments']) == 0:
+        return 0, start
 
-        accumulator = 0
-        for payment in self.payment_values:
-            accumulator += payment
+    accumulator = 0
+    while start < len(Graph[i][j]['payments']):
+        accumulator += Graph[i][j]['payments'][start]
+        start+=1
 
-        self.payment_values.clear()
-        return round(accumulator/self.size)
+    return round(accumulator/size), start
