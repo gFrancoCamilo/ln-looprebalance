@@ -87,14 +87,23 @@ def get_payments_ln (Graph: nx.DiGraph, list_payments: list, n: int = 7):
     """
     end_hosts = get_end_hosts(Graph, n)
     payments = 0
+    tries = 0
     payments_dict = {}
     print ("Attributing selected payments to selected end-hosts. This may take a while...")
     while payments < len(list_payments):
         source = np.random.choice(end_hosts)
         destination = np.random.choice(end_hosts)
         source_node_balance = get_node_balance(Graph, source)
+
+        """Added this so it doesn't get stuck looking for a node"""
+        if tries > 300:
+            payments += 1
+
         if source_node_balance > list_payments[payments] and source != destination:
             payments_dict[(source,destination)] = list_payments[payments]
             payments += 1
+            tries = 0
+        else:
+            tries += 1
     return payments_dict
     
