@@ -232,8 +232,9 @@ def snowball_sample (Graph, node = None, size = 200):
     while not q.empty():
         for node in copy.neighbors(q.get()):
             if len(subgraph) < size:
-                q.put(node)
-                subgraph.append(node)
+                if node not in subgraph:
+                    q.put(node)
+                    subgraph.append(node)
             else:
                 break     
     remaining_nodes = []       
