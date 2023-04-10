@@ -19,6 +19,28 @@ def validate_graph (Graph):
         Graph.remove_edge(i,j)
     return Graph
 
+def set_capacities (Graph, option: str):
+    if option == 'lightning':
+        capacities = get_lightning_capacities()
+        for (i,j) in tqdm(Graph.edges, desc='Assigning capacities'):
+            if 'capacity' not in Graph[i][j]:
+                Graph[i][j]['capacity'] = random.choice(capacities)
+                Graph[j][i]['capacity'] = Graph[i][j]['capacity']
+    else:
+        raise Exception ('Invalid option for capacity setting')
+    return Graph
+
+def get_lightning_capacities ():
+    Graph = graph_names ('jul 2022')
+    Graph = validate_graph(Graph)
+
+    capacities = []
+    for (i,j) in Graph.edges():
+        capacities.append(Graph[i][j]['capacity'])
+    
+    return capacities
+
+
 def set_balance (Graph, option: str = '99-1'):
     """
     set_balance initiates the balance for every channel on the network.
