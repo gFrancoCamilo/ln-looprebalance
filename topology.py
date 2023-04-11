@@ -5,7 +5,7 @@ import queue
 import numpy as np
 from multiprocessing import Pool
 
-def generate_graph (n, alpha, beta, gamma, k, p, m, option: str):
+def generate_graph (n = None, alpha = None, beta = None, gamma = None, k = None, p = None, m = None, option: str = 'lightning'):
     """
     Generates directed graph to be used in the simulation. The available options are scale-free,
     watts-strogatz, and barabasi-albert. While both scale-free and barabasi-albert creates scale-free,

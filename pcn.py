@@ -19,26 +19,78 @@ def validate_graph (Graph):
         Graph.remove_edge(i,j)
     return Graph
 
-def set_capacities (Graph, option: str):
+def set_attributes (Graph: nx.DiGraph, option: str):
+    """
+    set_attributes set PCN-related attributes in synthetic graphs. If the graph
+    comes from a NetworkX graph generator, initially it does not have informations
+    like fee and capacity. As we need to kickstart these stats, we provide two options.
+    In the Lightning option, we get information from the Lightning Network dataset to model
+    the generated graph. Second, we provide a random option that generates these values randomly.
+    """
     if option == 'lightning':
-        capacities = get_lightning_capacities()
+        (capacities, capacities_highest_degree, fee_base, fee_rate) = get_lightning_attributes()
+
+        """Getting highest degree nodes. As we want to mimic LN's structure, we sort highest degree nodes\' capacities
+           from LN's highest degree nodes\' capacities. In this case, we get the 10\% of nodes with highest degrees"""
+        number_nodes = round(Graph.number_of_nodes()*0.1)
+        k_central_nodes = get_k_most_centralized_nodes (Graph, number_nodes)
+        k_central_nodes_dict = dict.fromkeys(k_central_nodes, "True")
+
         for (i,j) in tqdm(Graph.edges, desc='Assigning capacities'):
             if 'capacity' not in Graph[i][j]:
-                Graph[i][j]['capacity'] = random.choice(capacities)
-                Graph[j][i]['capacity'] = Graph[i][j]['capacity']
+                if i not in k_central_nodes_dict and j not in k_central_nodes_dict:
+                    """Setting channel capacity. Capacity is, by definition, equal in the two directions"""
+                    Graph[i][j]['capacity'] = random.choice(capacities)
+                    Graph[j][i]['capacity'] = Graph[i][j]['capacity']
+                else:
+                    """Setting channel capacity for highest degree nodes. Capacity is, by definition, equal in the two directions"""
+                    Graph[i][j]['capacity'] = random.choice(capacities_highest_degree)
+                    Graph[j][i]['capacity'] = Graph[i][j]['capacity']
+
+                """Setting base fee. As nodes can freely choose different fees for the 2 directions of a channel,
+                   we sort a different values for each direction"""
+                Graph[i][j]['fee_base_msat'] = random.choice(fee_base)
+                Graph[j][i]['fee_base_msat'] = random.choice(fee_base)
+
+                """Setting proportional fee. As nodes can freely choose different fees for the 2 directions of a channel,
+                   we sort a different values for each direction"""
+                Graph[i][j]['fee_proportional_millionths'] = random.choice(fee_rate)
+                Graph[j][i]['fee_proportional_millionths'] = random.choice(fee_rate)
     else:
         raise Exception ('Invalid option for capacity setting')
     return Graph
 
-def get_lightning_capacities ():
+def get_lightning_attributes ():
+    """
+    get_lightning_attributes gets channel-related attributes from the Lightning Network's snapshot to
+    model NetworkX-generated graphs.
+    """
     Graph = graph_names ('jul 2022')
     Graph = validate_graph(Graph)
 
     capacities = []
-    for (i,j) in Graph.edges():
-        capacities.append(Graph[i][j]['capacity'])
+    capacities_highest_degree = []
+
+    fee_rate = []
+    fee_base = []
+
+    number_nodes = round(Graph.number_of_nodes()*0.1)
+    k_central_nodes = get_k_most_centralized_nodes (Graph, number_nodes)
+    k_central_nodes_dict = dict.fromkeys(k_central_nodes, "True")
+
+    desc = 'Getting capacities from highest degree nodes'
+    for central_node in tqdm(k_central_nodes, desc=desc):
+        for neighbor in Graph.neighbors(central_node):
+            if neighbor in k_central_nodes_dict:
+                capacities_highest_degree.append(Graph[central_node][neighbor]['capacity'])
+
+    for (i,j) in tqdm(Graph.edges(), desc='Getting Lightning node\'s attributes'):
+        if i not in k_central_nodes_dict and j not in k_central_nodes_dict:
+            capacities.append(Graph[i][j]['capacity'])
+            fee_rate.append(Graph[i][j]['fee_proportional_millionths'])
+            fee_base.append(Graph[i][j]['fee_base_msat'])
     
-    return capacities
+    return (capacities, capacities_highest_degree, fee_base, fee_rate)
 
 
 def set_balance (Graph, option: str = '99-1'):

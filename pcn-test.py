@@ -45,8 +45,25 @@ def set_balance_ln_test (Graph, alpha: float = 0.01, debug: bool = False):
     except:
         raise Exception ("Failed to set ln balance")
 
-Graph = graph_names ('jul 2022')
-Graph = validate_graph(Graph)
+def set_attributes_test ():
+    Graph = generate_graph(n = 256, m = 5, option='barabasi-albert')
+    assert Graph.is_directed() == True
+
+    Graph = validate_graph(Graph)
+    assert Graph.number_of_nodes() != 0 and Graph.number_of_edges != 0
+
+    Graph = set_attributes (Graph, 'lightning')
+    for (i,j) in Graph.edges():
+        assert Graph[i][j]['capacity'] == Graph[j][i]['capacity']
+        print ("Capacity for channel " + str((i,j)) + ": " + str(Graph[i][j]['capacity']))
+        print ("Base fee for channel " + str((i,j)) + ": " + str(Graph[i][j]['fee_base_msat']))
+        print ("Fee rate for channel " + str((i,j)) + ": " + str(Graph[i][j]['fee_proportional_millionths']))
+    
+    return Graph
+
+Graph = set_attributes_test()
+#Graph = graph_names ('jul 2022')
+#raph = validate_graph(Graph)
 
 v1 = np.random.choice(Graph.nodes())
 v2 = np.random.choice(Graph.nodes())
