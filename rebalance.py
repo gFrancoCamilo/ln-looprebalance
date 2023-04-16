@@ -3,6 +3,7 @@ import networkx as nx
 import time
 import tqdm
 from cycle_finder import *
+from pcn import *
 
 def init_rebalance (Graph: nx.DiGraph, event: threading.Event, channel: tuple, threshold: float = 0.3, delay: int = 5):
     """
@@ -76,3 +77,26 @@ def rebalance_half (Graph: nx.DiGraph, channel: tuple):
     """If rebalanced is False, it means that the rebalance payment couldn't be routed through the cycles"""
     if rebalanced == False:
         raise Exception ('Could not rebalance channel')
+
+def pickhardt_and_nowostawski (Graph: nx.DiGraph, node: str):
+    """
+    pickhardt_and_nowostawski implements the rebalancing algorithm proposed by Pickhardt and Nowostawski
+    published at ICBC (available at https://ieeexplore.ieee.org/document/9169456).
+    """
+
+    """Computing node balance coefficient"""
+    node_balance = get_node_balance(Graph, node)
+    node_capacity = 0
+    for neighbor in Graph.neighbors(node):
+        node_capacity += Graph[node][neighbor]['capacity']
+    node_balance_coefficient = node_balance/node_capacity
+
+    """Computing channel balance coefficients"""
+    channel_balance_coefficients = [(neighbor, Graph[node][neighbor]['balance']/Graph[node][neighbor]['capacity']) for neighbor in Graph.neighbors(node)]
+
+    """Checking which channel balance coefficients are higher than node coefficient"""
+    imbalanced = []
+    for (neighbor,channel_coefficient) in channel_balance_coefficients:
+        if channel_coefficient - node_balance_coefficient > 0:
+            imbalanced.append((neighbor, channel_coefficient))
+            
