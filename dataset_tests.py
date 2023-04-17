@@ -9,19 +9,32 @@ def check_ripple_seasonality ():
     df = df.loc[df['USD_amount'] > 0].reset_index()
     df = df.sort_values(by=['unix_timestamp'], ascending=True).reset_index(drop=True)
 
-    initial_timestamp = df['unix_timestamp'][0]
-    timestamp_iterator = df['unix_timestamp'][0]
+    initial_timestamp = 1388534400
+    timestamp_iterator = 1388534400
     transactions_day = []
     day_accumulator = 0
     index = 0
-    while timestamp_iterator < (initial_timestamp + 365*24*60*60):
+    while timestamp_iterator < (initial_timestamp + 2*365*24*60*60):
+        while df['unix_timestamp'][index] < initial_timestamp:
+            index += 1
         while df['unix_timestamp'][index] < timestamp_iterator + (24*60*60):
-            day_accumulator += df['unix_timestamp'][index]
+            day_accumulator += df['USD_amount'][index]
             index += 1
         transactions_day.append(day_accumulator)
         timestamp_iterator = timestamp_iterator + (24*60*60)
         day_accumulator = 0
     
+    transactions_week = []
+    week_accumulator = 0
+    index = 0
+    for day in transactions_day:
+        if index == 7:
+            transactions_week.append(week_accumulator/index)
+            week_accumulator = 0
+            index = 0
+        week_accumulator += day
+        index += 1      
+
     plt.plot(transactions_day)
     plt.show()
 check_ripple_seasonality()
