@@ -35,6 +35,25 @@ def check_ripple_seasonality ():
         week_accumulator += day
         index += 1      
 
-    plt.plot(transactions_day)
-    plt.show()
+    plt.figure()
+    plt.plot(transactions_day, lw=1.5)
+    plt.ylabel('Valor das Transações (US$)', fontsize=16)
+    plt.xlabel('Dia', fontsize=16)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    ax = plt.gca()
+    ax.yaxis.get_offset_text().set_fontsize(16)
+    plt.tight_layout()
+    plt.savefig('results/transactions_day.png', dpi=600)
+
+    plt.clf()
+    plt.plot(transactions_week, lw=1.5)
+    plt.ylabel('Valor das Transações (US$)', fontsize=16)
+    plt.xlabel('Semana', fontsize=16)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    ax = plt.gca()
+    ax.yaxis.get_offset_text().set_fontsize(16)
+    plt.tight_layout()
+    plt.savefig('results/transactions_week.png', dpi=600)
 check_ripple_seasonality()
