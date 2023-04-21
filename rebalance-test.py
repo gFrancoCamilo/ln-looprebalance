@@ -15,7 +15,7 @@ def init_rebalance_test (Graph: nx.DiGraph, payment_dict, threshold: float = 0.3
         
         event = threading.Event()
         for edge in edges:
-            init_rebalance (Graph, event, edge, threshold, delay)
+            init_rebalance (Graph, event, edge, 'pickhardt', threshold, delay)
         
         get_success_ratio(Graph, payment_dict)
         event.set()

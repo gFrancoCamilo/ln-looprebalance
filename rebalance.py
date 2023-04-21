@@ -5,14 +5,14 @@ import tqdm
 from cycle_finder import *
 from pcn import *
 
-def init_rebalance (Graph: nx.DiGraph, event: threading.Event, channel: tuple, threshold: float = 0.3, delay: int = 5):
+def init_rebalance (Graph: nx.DiGraph, event: threading.Event, channel: tuple, option='fifty', threshold: float = 0.3, delay: int = 5):
     """
     init_rebalance starts the thread that monitor channels for rebalancing
     """
-    thread = threading.Thread(target = monitor_channel, args=(Graph, event, channel, threshold, delay,))
+    thread = threading.Thread(target = monitor_channel, args=(Graph, event, channel, option, threshold, delay,))
     thread.start()
 
-def monitor_channel (Graph: nx.DiGraph, event: threading.Event, channel: tuple, threshold: float = 0.3, delay: int = 5):
+def monitor_channel (Graph: nx.DiGraph, event: threading.Event, channel: tuple, option = 'fifty', threshold: float = 0.3, delay: int = 5):
     """
     monitor_channel constantly checks if a channel is imbalanced and rebalances it if it.
     The imbalance measurement is done by checking what percentage of capacity each user holds.
@@ -21,9 +21,13 @@ def monitor_channel (Graph: nx.DiGraph, event: threading.Event, channel: tuple, 
     being monitored, the threshold and the delay, which defines the interval that the function
     checks the channel balance.
     """
+    (i,j) = channel
     while True:
         if check_rebalance (Graph, channel, threshold) == True:
-            rebalance_half(Graph, channel)
+            if option == 'fifty':
+                rebalance_half(Graph, channel)
+            if option == 'pickhardt':
+                pickhardt_and_nowostawski(Graph, i)
 
         time.sleep(delay)
 
@@ -84,19 +88,61 @@ def pickhardt_and_nowostawski (Graph: nx.DiGraph, node: str):
     published at ICBC (available at https://ieeexplore.ieee.org/document/9169456).
     """
 
-    """Computing node balance coefficient"""
-    node_balance = get_node_balance(Graph, node)
-    node_capacity = 0
-    for neighbor in Graph.neighbors(node):
-        node_capacity += Graph[node][neighbor]['capacity']
-    node_balance_coefficient = node_balance/node_capacity
+    for i in tqdm(range(100), desc='Attemping to rebalance through Pickhardt and Nowostawski'):
+        """Computing node balance coefficient"""
+        node_balance = get_node_balance(Graph, node)
+        node_capacity = 0
+        for neighbor in Graph.neighbors(node):
+            node_capacity += Graph[node][neighbor]['capacity']
+        node_balance_coefficient = node_balance/node_capacity
 
-    """Computing channel balance coefficients"""
-    channel_balance_coefficients = [(neighbor, Graph[node][neighbor]['balance']/Graph[node][neighbor]['capacity']) for neighbor in Graph.neighbors(node)]
+        """Computing channel balance coefficients"""
+        channel_balance_coefficients = [(neighbor, Graph[node][neighbor]['balance']/Graph[node][neighbor]['capacity']) for neighbor in Graph.neighbors(node)]
 
-    """Checking which channel balance coefficients are higher than node coefficient"""
-    imbalanced = []
-    for (neighbor,channel_coefficient) in channel_balance_coefficients:
-        if channel_coefficient - node_balance_coefficient > 0:
-            imbalanced.append((neighbor, channel_coefficient))
+        """Checking which channel balance coefficients are higher than node coefficient"""
+        imbalanced_more = []
+        imbalanced_less = []
+        for (neighbor,channel_coefficient) in channel_balance_coefficients:
+            if channel_coefficient - node_balance_coefficient > 0:
+                imbalanced_more.append((neighbor, channel_coefficient))
+            if channel_coefficient - node_balance_coefficient < 0:
+                imbalanced_less.append((neighbor, channel_coefficient))
+        
+        if len(imbalanced_more) == 0:
+            raise Exception ('No candidate for now')
+        
+        (neighbor, channel_coefficient) = random.choice(imbalanced_more)
+        rebalance_value = int(int(Graph[node][neighbor]['capacity'])*(channel_coefficient - node_balance_coefficient))
+
+        payment_Graph = make_graph_payment(Graph, rebalance_value)
+        paths = []
+        for (target,_) in imbalanced_less:
+            paths.append([node] + find_shortest_path(payment_Graph, neighbor, target) + [node])
+        
+        rebalanced = False
+        paid = 0
+        print("Value:" + str(rebalance_value))
+        for cycle in paths:
+            print("Paid:" + str(paid))
+            balance = 99999999
+            for index in range (0, len(cycle)-1):
+                if Graph[cycle[index]][cycle[index+1]]['balance'] < balance:
+                    balance = Graph[cycle[index]][cycle[index+1]]['balance']
             
+            if rebalanced == True:
+                break
+            try:
+                if balance < rebalance_value:
+                    make_payment(Graph, node, neighbor, balance, cycle)
+                    paid += balance
+                    rebalance_value -= balance
+                else:
+                    make_payment(Graph, node, neighbor, rebalance_value, cycle)
+                    rebalanced = True
+
+                if rebalance_value <= 0:
+                    rebalanced = True
+            except Exception as e:
+                print(e)
+                continue
+                
