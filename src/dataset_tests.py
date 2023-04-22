@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def check_ripple_seasonality ():
-    df = pd.read_csv('datasets/transactions-in-USD-jan-2013-aug-2016.txt')
+    df = pd.read_csv('../datasets/transactions-in-USD-jan-2013-aug-2016.txt')
 
     df = df.loc[df['USD_amount'] < 10**(8)].reset_index()
     df = df.loc[df['USD_amount'] > 0].reset_index()
