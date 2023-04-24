@@ -22,6 +22,8 @@ def monitor_channel (Graph: nx.DiGraph, event: threading.Event, channel: tuple, 
     checks the channel balance.
     """
     (i,j) = channel
+
+    """Routine to check if channel needs to be rebalanced"""
     while True:
         if check_rebalance (Graph, channel, threshold) == True:
             if option == 'fifty':
@@ -88,18 +90,21 @@ def pickhardt_and_nowostawski (Graph: nx.DiGraph, node: str):
     published at ICBC (available at https://ieeexplore.ieee.org/document/9169456).
     """
 
+    """Although the paper says to run it as long as channel coefficients are not even enough, we limit it to
+       100 steps so it doens't ru eternally"""
     for i in tqdm(range(100), desc='Attemping to rebalance through Pickhardt and Nowostawski'):
-        """Computing node balance coefficient"""
+        
+        """Computing node balance coefficient (step 1)"""
         node_balance = get_node_balance(Graph, node)
         node_capacity = 0
         for neighbor in Graph.neighbors(node):
             node_capacity += Graph[node][neighbor]['capacity']
         node_balance_coefficient = node_balance/node_capacity
 
-        """Computing channel balance coefficients"""
+        """Computing channel balance coefficients (step 2)"""
         channel_balance_coefficients = [(neighbor, Graph[node][neighbor]['balance']/Graph[node][neighbor]['capacity']) for neighbor in Graph.neighbors(node)]
 
-        """Checking which channel balance coefficients are higher than node coefficient"""
+        """Checking which channel balance coefficients are higher than node coefficient (step 3)"""
         imbalanced_more = []
         imbalanced_less = []
         for (neighbor,channel_coefficient) in channel_balance_coefficients:
@@ -111,6 +116,8 @@ def pickhardt_and_nowostawski (Graph: nx.DiGraph, node: str):
         if len(imbalanced_more) == 0:
             raise Exception ('No candidate for now')
         
+        """We randomly choose a channel with higher channel coefficient than the node coefficient and calculate the
+          rebalance value (step 4 and 5)"""
         (neighbor, channel_coefficient) = random.choice(imbalanced_more)
         rebalance_value = int(int(Graph[node][neighbor]['capacity'])*(channel_coefficient - node_balance_coefficient))
 
@@ -119,19 +126,22 @@ def pickhardt_and_nowostawski (Graph: nx.DiGraph, node: str):
         for (target,_) in imbalanced_less:
             paths.append([node] + find_shortest_path(payment_Graph, neighbor, target) + [node])
         
+        
+        """Node tries to issue the payment and if it can't, it settles for a smaller amount to make progress (step 6)"""
         rebalanced = False
         paid = 0
-        print("Value:" + str(rebalance_value))
+        
         for cycle in paths:
-            print("Paid:" + str(paid))
             balance = 99999999
             for index in range (0, len(cycle)-1):
                 if Graph[cycle[index]][cycle[index+1]]['balance'] < balance:
                     balance = Graph[cycle[index]][cycle[index+1]]['balance']
             
+            """If the channel is already rebalanced, there is no need to keep trying"""
             if rebalanced == True:
                 break
             try:
+                """If the rebalance value cannot be sent through the path, the node sends what is available to make progress"""
                 if balance < rebalance_value:
                     make_payment(Graph, node, neighbor, balance, cycle)
                     paid += balance
@@ -139,10 +149,9 @@ def pickhardt_and_nowostawski (Graph: nx.DiGraph, node: str):
                 else:
                     make_payment(Graph, node, neighbor, rebalance_value, cycle)
                     rebalanced = True
-
+                """If the complete value has been sent, there is no need to keep trying"""
                 if rebalance_value <= 0:
                     rebalanced = True
             except Exception as e:
-                print(e)
                 continue
                 
