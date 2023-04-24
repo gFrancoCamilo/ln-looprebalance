@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.fft import fft
 
 def check_ripple_seasonality ():
     df = pd.read_csv('../datasets/transactions-in-USD-jan-2013-aug-2016.txt')
@@ -44,7 +45,7 @@ def check_ripple_seasonality ():
     ax = plt.gca()
     ax.yaxis.get_offset_text().set_fontsize(16)
     plt.tight_layout()
-    plt.savefig('results/transactions_day.png', dpi=600)
+    plt.savefig('../results/transactions_day.png', dpi=600)
 
     plt.clf()
     plt.plot(transactions_week, lw=1.5)
@@ -55,10 +56,35 @@ def check_ripple_seasonality ():
     ax = plt.gca()
     ax.yaxis.get_offset_text().set_fontsize(16)
     plt.tight_layout()
-    plt.savefig('results/transactions_week.png', dpi=600)
+    plt.savefig('../results/transactions_week.png', dpi=600)
+
+    x = np.abs(fft(transactions_day))
+    plt.clf()
+    plt.plot(x, lw=1.5)
+    plt.ylabel('Valor Absoluto da Componente', fontsize=16)
+    plt.xlabel('Peridiocidade em Dias',fontsize=16)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    ax = plt.gca()
+    ax.yaxis.get_offset_text().set_fontsize(16)
+    plt.tight_layout()
+    plt.savefig('../results/fft_day.png', dpi=600)
+
+    x = np.abs(fft(transactions_week))
+    plt.clf()
+    plt.plot(x, lw=1.5)
+    plt.ylabel('Valor Absoluto da Componente', fontsize=16)
+    plt.xlabel('Peridiocidade em Semanas',fontsize=16)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    ax = plt.gca()
+    ax.yaxis.get_offset_text().set_fontsize(16)
+    plt.tight_layout()
+    plt.savefig('../results/fft_week.png', dpi=600)
+
 
 def check_ripple_node_seasonality ():
-    df = pd.read_csv('datasets/transactions-in-USD-jan-2013-aug-2016.txt')
+    df = pd.read_csv('../datasets/transactions-in-USD-jan-2013-aug-2016.txt')
 
     df = df.loc[df['USD_amount'] < 10**(8)].reset_index()
     df = df.loc[df['USD_amount'] > 0].reset_index()
@@ -104,7 +130,7 @@ def check_ripple_node_seasonality ():
     ax = plt.gca()
     ax.yaxis.get_offset_text().set_fontsize(16)
     plt.tight_layout()
-    plt.savefig('results/transactions_day_node.png', dpi=600)
+    plt.savefig('../results/transactions_day_node.png', dpi=600)
 
     plt.clf()
     plt.plot(transactions_week, lw=1.5)
@@ -115,6 +141,30 @@ def check_ripple_node_seasonality ():
     ax = plt.gca()
     ax.yaxis.get_offset_text().set_fontsize(16)
     plt.tight_layout()
-    plt.savefig('results/transactions_week_node.png', dpi=600)
-#check_ripple_seasonality()
+    plt.savefig('../results/transactions_week_node.png', dpi=600)
+
+    x = np.abs(fft(transactions_day))
+    plt.clf()
+    plt.plot(x, lw=1.5)
+    plt.ylabel('Valor Absoluto da Componente', fontsize=16)
+    plt.xlabel('Peridiocidade em Dias',fontsize=16)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    ax = plt.gca()
+    ax.yaxis.get_offset_text().set_fontsize(16)
+    plt.tight_layout()
+    plt.savefig('../results/fft_day_node.png', dpi=600)
+
+    x = np.abs(fft(transactions_week))
+    plt.clf()
+    plt.plot(x, lw=1.5)
+    plt.ylabel('Valor Absoluto da Componente', fontsize=16)
+    plt.xlabel('Peridiocidade em Semanas',fontsize=16)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    ax = plt.gca()
+    ax.yaxis.get_offset_text().set_fontsize(16)
+    plt.tight_layout()
+    plt.savefig('../results/fft_week_node.png', dpi=600)
+check_ripple_seasonality()
 check_ripple_node_seasonality()
