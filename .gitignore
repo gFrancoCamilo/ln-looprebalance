@@ -8,3 +8,4 @@ progress_file
 __pycache__/
 datasets/
 ln-snapshots/
+results/
