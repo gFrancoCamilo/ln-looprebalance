@@ -2,6 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.fft import fft
+from topology import *
+from pcn import *
 
 def check_ripple_seasonality ():
     df = pd.read_csv('../datasets/transactions-in-USD-jan-2013-aug-2016.txt')
@@ -130,7 +132,7 @@ def check_ripple_node_seasonality ():
     ax = plt.gca()
     ax.yaxis.get_offset_text().set_fontsize(16)
     plt.tight_layout()
-    plt.savefig('../results/transactions_day_node.png', dpi=600)
+    plt.savefig('../results/transactions_day_node.pdf', dpi=600)
 
     plt.clf()
     plt.plot(transactions_week, lw=1.5)
@@ -141,7 +143,7 @@ def check_ripple_node_seasonality ():
     ax = plt.gca()
     ax.yaxis.get_offset_text().set_fontsize(16)
     plt.tight_layout()
-    plt.savefig('../results/transactions_week_node.png', dpi=600)
+    plt.savefig('../results/transactions_week_node.pdf', dpi=600)
 
     x = np.abs(fft(transactions_day))
     plt.clf()
@@ -153,7 +155,7 @@ def check_ripple_node_seasonality ():
     ax = plt.gca()
     ax.yaxis.get_offset_text().set_fontsize(16)
     plt.tight_layout()
-    plt.savefig('../results/fft_day_node.png', dpi=600)
+    plt.savefig('../results/fft_day_node.pdf', dpi=600)
 
     x = np.abs(fft(transactions_week))
     plt.clf()
@@ -165,6 +167,29 @@ def check_ripple_node_seasonality ():
     ax = plt.gca()
     ax.yaxis.get_offset_text().set_fontsize(16)
     plt.tight_layout()
-    plt.savefig('../results/fft_week_node.png', dpi=600)
-check_ripple_seasonality()
-check_ripple_node_seasonality()
+    plt.savefig('../results/fft_week_node.pdf', dpi=600)
+
+def degree_distribution(Graph: nx.DiGraph):
+    degrees = [Graph.degree(node) for node in Graph.nodes()]
+    fig = plt.figure()
+    plt.hist(degrees, density=True, cumulative=True, histtype='step', bins=5000, linewidth=2)
+    ax = plt.gca()
+    ax.set_xlim(-200,2791.8)
+    axin = ax.inset_axes([0.4,0.15,0.5,0.4])
+    axin.hist(degrees,density=True, cumulative=True, histtype='step', bins=5000, linewidth=2)
+    axin.set_xlim(1,5.5)
+    axin.set_ylim(0.3560,0.3595)
+    ax.indicate_inset_zoom(axin, edgecolor='k')
+    axin.grid()
+    axin.annotate(text='38% of nodes have\n one neighbor only',xy=(2,0.358), xytext=(2.1,0.3563), arrowprops=dict(arrowstyle='->', lw=2), fontsize=14)
+    plt.ylabel('CDF', fontsize=16)
+    plt.xlabel('Node degree', fontsize=16)
+    ax.tick_params(labelsize=16)
+    axin.tick_params(labelsize=16)
+    fig.savefig("../results/degree_distribution.pdf", dpi=300, bbox_inches='tight')
+
+Graph = graph_names('jul 2022')
+Graph = validate_graph(Graph)
+degree_distribution(Graph)
+#check_ripple_seasonality()
+#check_ripple_node_seasonality()
