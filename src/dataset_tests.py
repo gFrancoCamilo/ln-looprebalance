@@ -188,6 +188,7 @@ def degree_distribution(Graph: nx.DiGraph):
     axin.tick_params(labelsize=16)
     fig.savefig("../results/degree_distribution.pdf", dpi=300, bbox_inches='tight')
 
+plt.style.use('seaborn-v0_8-colorblind')
 Graph = graph_names('jul 2022')
 Graph = validate_graph(Graph)
 degree_distribution(Graph)
