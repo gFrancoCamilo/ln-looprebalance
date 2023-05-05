@@ -1,9 +1,12 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 from scipy.fft import fft
 from topology import *
 from pcn import *
+from cycle_finder import *
+#from tqdm import tqdm
 
 def check_ripple_seasonality ():
     df = pd.read_csv('../datasets/transactions-in-USD-jan-2013-aug-2016.txt')
@@ -188,9 +191,27 @@ def degree_distribution(Graph: nx.DiGraph):
     axin.tick_params(labelsize=16)
     fig.savefig("../results/degree_distribution.pdf", dpi=300, bbox_inches='tight')
 
+def check_cycles (Graph: nx.DiGraph):
+    degrees = list(Graph.degree())
+    nodes_with_degree_two = []
+    for (node, degree) in degrees:
+        if degree == 4:
+            nodes_with_degree_two.append(node)
+    
+    cycles = []
+    for node in tqdm(nodes_with_degree_two, desc='Checking for cycles'):
+        neighbors = [n for n in Graph[node]]
+        random_neighbor = random.choice(neighbors)
+        try:
+            cycles.append(find_cycle (Graph, (node, random_neighbor), node, 4104693))
+        except:
+            cycles.append([])
+    print(cycles)
+
 plt.style.use('seaborn-v0_8-colorblind')
 Graph = graph_names('jul 2022')
 Graph = validate_graph(Graph)
-degree_distribution(Graph)
+#degree_distribution(Graph)
+check_cycles(Graph)
 #check_ripple_seasonality()
 #check_ripple_node_seasonality()
