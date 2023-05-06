@@ -192,6 +192,9 @@ def find_shortest_path (Graph, s, t):
     """
     return nx.shortest_path(Graph, source = s, target = t, weight = 'fee')
 
+def find_shortest_path_cost (Graph, s, t):
+    return nx.single_source_dijkstra(Graph, source = s, target = t, weight = 'fee')
+
 def make_graph_payment (Graph: nx.DiGraph, value: int) -> nx.DiGraph:
     """
     make_graph_payment transforms the regular network graph into a payment graph.

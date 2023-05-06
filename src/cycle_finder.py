@@ -1,7 +1,7 @@
 import networkx as nx
 from pcn import *
 
-def find_cycle (Graph, channel, node, value=500):
+def find_cycle (Graph, channel, node, value=500, length=False):
     """
     find_cycle finds a cycle that a given node is inserted in.
     The function receives a node that in and the channel that is
@@ -26,7 +26,17 @@ def find_cycle (Graph, channel, node, value=500):
         cycles = []
         neighbors = [n for n in copy[node]]
         for neighbor in neighbors:
-            cycles.append(find_shortest_path(copy, neighbor, destination))
+            if length == False:
+                cycles.append(find_shortest_path(copy, neighbor, destination))
+            else:
+                cycles.append(find_shortest_path_cost(copy, neighbor, destination))
+        if length == True:
+            cost_cycle = []
+            for (cost, path) in cycles:
+                cost_cycle.append(cost)
+            return min(cost_cycle)
+
+            return min(cycles)
         for cycle in cycles:
             cycle.insert(0, node)
             cycle.append(node)

@@ -2,6 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import statistics
+import os
 from scipy.fft import fft
 from topology import *
 from pcn import *
@@ -206,12 +208,41 @@ def check_cycles (Graph: nx.DiGraph):
             cycles.append(find_cycle (Graph, (node, random_neighbor), node, 4104693))
         except:
             cycles.append([])
-    print(cycles)
+
+    no_cycle = 0
+    for cycle in cycles:
+        if len(cycle) == 0:
+            no_cycle += 1
+    result = no_cycle/len(cycles)
+    print(result)
+
+def check_cycles_cost (Graph: nx.DiGraph, degree_check=4):
+    degrees = list(Graph.degree())
+    nodes_with_degree_two = []
+    for (node, degree) in degrees:
+        if degree == degree_check:
+            nodes_with_degree_two.append(node)
+    
+    cycles = []
+    for node in tqdm(nodes_with_degree_two, desc='Checking for cycles'):
+        neighbors = [n for n in Graph[node]]
+        for neighbor in neighbors:
+            try:
+                cycles.append(find_cycle(Graph, (node, neighbor), node, 4104693, length=True))
+            except:
+                continue
+
+    return statistics.mean(cycles)
 
 plt.style.use('seaborn-v0_8-colorblind')
 Graph = graph_names('jul 2022')
 Graph = validate_graph(Graph)
 #degree_distribution(Graph)
-check_cycles(Graph)
+file = open("../results/check_cycles_cost.txt", "w")
+for i in range(4,22,2):
+    result = check_cycles_cost(Graph)
+    file.write(result + '\n')
+file.close()
+
 #check_ripple_seasonality()
 #check_ripple_node_seasonality()
