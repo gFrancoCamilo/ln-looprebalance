@@ -203,11 +203,11 @@ def check_cycles (Graph: nx.DiGraph):
     cycles = []
     for node in tqdm(nodes_with_degree_two, desc='Checking for cycles'):
         neighbors = [n for n in Graph[node]]
-        random_neighbor = random.choice(neighbors)
-        try:
-            cycles.append(find_cycle (Graph, (node, random_neighbor), node, 4104693))
-        except:
-            cycles.append([])
+        for neighbor in neighbors:
+            try:
+                cycles.append(find_cycle (Graph, (node, random_neighbor), node, 4104693))
+            except:
+                cycles.append([])
 
     no_cycle = 0
     for cycle in cycles:
