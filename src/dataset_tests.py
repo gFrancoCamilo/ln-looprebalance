@@ -193,11 +193,11 @@ def degree_distribution(Graph: nx.DiGraph):
     axin.tick_params(labelsize=16)
     fig.savefig("../results/degree_distribution.pdf", dpi=300, bbox_inches='tight')
 
-def check_cycles (Graph: nx.DiGraph):
+def check_cycles (Graph: nx.DiGraph, degree_check = 4):
     degrees = list(Graph.degree())
     nodes_with_degree_two = []
     for (node, degree) in degrees:
-        if degree == 4:
+        if degree == degree_check:
             nodes_with_degree_two.append(node)
     
     cycles = []
@@ -205,7 +205,7 @@ def check_cycles (Graph: nx.DiGraph):
         neighbors = [n for n in Graph[node]]
         for neighbor in neighbors:
             try:
-                cycles.append(find_cycle (Graph, (node, random_neighbor), node, 4104693))
+                cycles.append(find_cycle (Graph, (node, neighbor), node, 4104693))
             except:
                 cycles.append([])
 
@@ -214,7 +214,7 @@ def check_cycles (Graph: nx.DiGraph):
         if len(cycle) == 0:
             no_cycle += 1
     result = no_cycle/len(cycles)
-    print(result)
+    return (len(cycles),result)
 
 def check_cycles_cost (Graph: nx.DiGraph, degree_check=4):
     degrees = list(Graph.degree())
@@ -238,11 +238,17 @@ plt.style.use('seaborn-v0_8-colorblind')
 Graph = graph_names('jul 2022')
 Graph = validate_graph(Graph)
 #degree_distribution(Graph)
-file = open("../results/check_cycles_cost.txt", "w")
+my_file = open("../results/check_cycles.txt", "w")
 for i in range(4,22,2):
-    result = check_cycles_cost(Graph)
-    file.write(result + '\n')
-file.close()
+    try:
+        (len_cycles, result) = check_cycles(Graph, degree_check = i)
+        my_file.write(str(len_cycles) + ',' + str(result) + '\n')
+    except Exception as e:
+        error_file = open('../results/error.txt','w')
+        error_file.write(str(e))
+        error_file.close()
+        
+my_file.close()
 
 #check_ripple_seasonality()
 #check_ripple_node_seasonality()
