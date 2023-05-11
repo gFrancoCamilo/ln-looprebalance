@@ -4,6 +4,7 @@ import numpy as np
 import random
 import statistics
 import os
+import pickle
 from scipy.fft import fft
 from topology import *
 from pcn import *
@@ -186,7 +187,7 @@ def degree_distribution(Graph: nx.DiGraph):
     axin.set_ylim(0.3560,0.3595)
     ax.indicate_inset_zoom(axin, edgecolor='k')
     axin.grid()
-    axin.annotate(text='38% of nodes have\n one neighbor only',xy=(2,0.358), xytext=(2.1,0.3563), arrowprops=dict(arrowstyle='->', lw=2), fontsize=14)
+    axin.annotate(text='35.8% of nodes have\n one neighbor only',xy=(2,0.358), xytext=(2.1,0.3563), arrowprops=dict(arrowstyle='->', lw=2), fontsize=14)
     plt.ylabel('CDF', fontsize=16)
     plt.xlabel('Node degree', fontsize=16)
     ax.tick_params(labelsize=16)
@@ -232,17 +233,19 @@ def check_cycles_cost (Graph: nx.DiGraph, degree_check=4):
             except:
                 continue
 
-    return statistics.mean(cycles)
+    return cycles
 
 plt.style.use('seaborn-v0_8-colorblind')
 Graph = graph_names('jul 2022')
 Graph = validate_graph(Graph)
 #degree_distribution(Graph)
-my_file = open("../results/check_cycles.txt", "w")
-for i in range(4,22,2):
+my_file = open("../results/check_cycles_cost.dat", "wb")
+for i in range(4,42,2):
     try:
-        (len_cycles, result) = check_cycles(Graph, degree_check = i)
-        my_file.write(str(len_cycles) + ',' + str(result) + '\n')
+        cycles = check_cycles_cost(Graph, degree_check = i)
+        to_file = (i,cycles)
+        pickle.dump(to_file, my_file)
+        #my_file.write(str(len_cycles) + ',' + str(result) + '\n')
     except Exception as e:
         error_file = open('../results/error.txt','w')
         error_file.write(str(e))
