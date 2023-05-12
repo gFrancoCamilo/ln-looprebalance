@@ -235,23 +235,50 @@ def check_cycles_cost (Graph: nx.DiGraph, degree_check=4):
 
     return cycles
 
+def plot_cycles_cost ():
+    cost_file = open('../results/check_cycles_cost.dat','rb')
+    y = []
+    while True:
+        try:
+            (value, cost) = pickle.load(cost_file)
+            y.append(cost)
+        except EOFError:
+            break
+    medianprops = dict(linewidth=2)
+    fig = plt.figure()
+    plt.boxplot(y, labels=['4',' ','8',' ','12',' ','16',' ','20',' ','24',' ','28',' ','32',' ','36',' ','40'], medianprops=medianprops, boxprops=medianprops)
+    plt.ylabel('Rebalancing Cost (in satoshis)', fontsize=16)
+    plt.yscale('log')
+    plt.xlabel('Node Degree', fontsize=16)
+    plt.xticks(fontsize=16)
+    plt.yticks(fontsize=16)
+    fig.savefig("../results/cycles_cost.pdf", dpi=300, bbox_inches='tight')
+
+
 plt.style.use('seaborn-v0_8-colorblind')
-Graph = graph_names('jul 2022')
-Graph = validate_graph(Graph)
+#Graph = graph_names('jul 2022')
+#Graph = validate_graph(Graph)
 #degree_distribution(Graph)
-my_file = open("../results/check_cycles_cost.dat", "wb")
-for i in range(4,42,2):
-    try:
-        cycles = check_cycles_cost(Graph, degree_check = i)
-        to_file = (i,cycles)
-        pickle.dump(to_file, my_file)
+#my_file = open("../results/check_cycles_cost.dat", "wb")
+#for i in range(4,42,2):
+#    try:
+#        cycles = check_cycles_cost(Graph, degree_check = i)
+#        to_file = (i,cycles)
+#        pickle.dump(to_file, my_file)
         #my_file.write(str(len_cycles) + ',' + str(result) + '\n')
-    except Exception as e:
-        error_file = open('../results/error.txt','w')
-        error_file.write(str(e))
-        error_file.close()
+#    except Exception as e:
+#        error_file = open('../results/error.txt','w')
+#        error_file.write(str(e))
+#        error_file.close()
         
-my_file.close()
+#my_file.close()
+#file = open("../results/check_cycles_cost.txt", "w")
+#for i in range(4,22,2):
+#    result = check_cycles_cost(Graph)
+#    file.write(result + '\n')
+#file.close()
+
+plot_cycles_cost()
 
 #check_ripple_seasonality()
 #check_ripple_node_seasonality()
