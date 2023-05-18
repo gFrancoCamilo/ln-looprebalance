@@ -45,7 +45,7 @@ def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, cycle = T
                 if type(payment_graph[i][j]['fee']) is str:
                     payment_graph[i][j]['fee'] = int(payment_graph[i][j]['fee'])
             new_cc = nx.closeness_centrality(payment_graph, u=node_improve, distance='fee')
-            new_bc = nx.betweenness_centrality(payment_graph, weight='fee')
+            new_bc = nx.betweenness_centrality(payment_graph, normalized = True, weight='fee')
             
             if (node_improve, node) not in new_bc:
                 new_reward = (alpha*new_bc[node_improve] + (1-alpha)*new_cc)
