@@ -187,11 +187,12 @@ def degree_distribution(Graph: nx.DiGraph):
     axin.set_ylim(0.3560,0.3595)
     ax.indicate_inset_zoom(axin, edgecolor='k')
     axin.grid()
-    axin.annotate(text='35.8% of nodes have\n one neighbor only',xy=(2,0.358), xytext=(2.1,0.3563), arrowprops=dict(arrowstyle='->', lw=2), fontsize=14)
+    axin.annotate(text=r'$\approx$36% of nodes have'+ '\none neighbor only',xy=(2,0.358), xytext=(2.1,0.3563), arrowprops=dict(arrowstyle='->', lw=2), fontsize=14)
     plt.ylabel('CDF', fontsize=16)
     plt.xlabel('Node degree', fontsize=16)
     ax.tick_params(labelsize=16)
     axin.tick_params(labelsize=16)
+    plt.show()
     fig.savefig("../results/degree_distribution.pdf", dpi=300, bbox_inches='tight')
 
 def check_cycles (Graph: nx.DiGraph, degree_check = 4):
@@ -256,9 +257,10 @@ def plot_cycles_cost ():
 
 
 plt.style.use('seaborn-v0_8-colorblind')
-#Graph = graph_names('jul 2022')
-#Graph = validate_graph(Graph)
-#degree_distribution(Graph)
+Graph = graph_names('jul 2022')
+Graph = validate_graph(Graph)
+degree_distribution(Graph)
+
 #my_file = open("../results/check_cycles_cost.dat", "wb")
 #for i in range(4,42,2):
 #    try:
@@ -278,7 +280,7 @@ plt.style.use('seaborn-v0_8-colorblind')
 #    file.write(result + '\n')
 #file.close()
 
-plot_cycles_cost()
+#plot_cycles_cost()
 
 #check_ripple_seasonality()
 #check_ripple_node_seasonality()

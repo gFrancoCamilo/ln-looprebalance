@@ -17,30 +17,17 @@ def triadic_closure (Graph, node, number_channels, triadic_census, alpha, beta):
     the new connection make the node more profitable or not.
     """
 
-def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, beta = 0.5, cycle = True):
+def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, cycle = True):
     if node_improve not in Graph.nodes:
         Graph.add_node(node_improve)
     
-    new_edges = []
     selected_node = []
     cc_after = []
 
-    #centralized = get_k_most_centralized_nodes(Graph, 400)
-#    if (Graph.has_edge(node_improve,centralized[-1]) == False):
-#        Graph.add_edge(node_improve, centralized[-1], fee_base_msat = 1000)
-#        new_edges.append((node_improve, centralized[-1]))
-#        selected_node.append(centralized[-1])
-#        new_cc = nx.closeness_centrality(Graph, u=node_improve,distance="fee_base_msat")
-#        new_bc = edges_betweenness_centrality(Graph, 25)
-#        if (node_improve, centralized[-1]) not in new_bc:
-#            reward = (alpha*new_bc[(centralized[-1], node_improve)] + beta*new_cc)/2
-#        else:
-#            reward = (alpha*new_bc[(node_improve, centralized[-1])] + beta*new_cc)/2
-#        cc_after.append(reward)
-
     end = False
-    while(len(new_edges) < channels and end == False):
+    while(len(selected_node) < channels and end == False):
         max_reward = 0
+        max_node = None
         network_nodes = Graph.nodes()
         for node in tqdm(network_nodes, desc='Testing nodes to connect to'):
             if node == node_improve:
@@ -53,15 +40,17 @@ def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, beta = 0.
             Graph.add_edge(node_improve, node, fee_base_msat = 100, fee_proportional_millionths=50)
             Graph.add_edge(node, node_improve, fee_base_msat = 100, fee_proportional_millionths=50)
             
-            Graph = make_graph_payment(Graph, 4104693)
-            new_cc = nx.closeness_centrality(Graph, u=node_improve,distance="fee")
-            new_bc = nx.edge_betweenness_centrality(Graph, weight = 'fee')
+            payment_graph = make_graph_payment(Graph, 4104693)
+            for (i,j) in payment_graph.edges():
+                if type(payment_graph[i][j]['fee']) is str:
+                    payment_graph[i][j]['fee'] = int(payment_graph[i][j]['fee'])
+            new_cc = nx.closeness_centrality(payment_graph, u=node_improve, distance='fee')
+            new_bc = nx.betweenness_centrality(payment_graph, weight='fee')
             
             if (node_improve, node) not in new_bc:
-                new_reward = (alpha*new_bc[(node, node_improve)] + beta*new_cc)/2
-            else:
-                new_reward = (alpha*new_bc[(node_improve, node)] + beta*new_cc)/2
+                new_reward = (alpha*new_bc[node_improve] + (1-alpha)*new_cc)
             
+
             if new_reward >= max_reward:
                 if cycle == True:
                     if len(selected_node) != 0:
@@ -76,6 +65,7 @@ def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, beta = 0.
                     max_reward = new_reward
                     max_node = node
             Graph.remove_edge(node_improve, node)
+            Graph.remove_edge(node, node_improve)
         
         if len(cc_after) != 0:
             if max_reward < cc_after[-1]:
@@ -85,7 +75,6 @@ def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, beta = 0.
         Graph.add_edge(node_improve, max_node, fee_base_msat = 100, fee_proportional_millionths=50)
         cc_after.append(max_reward)
         selected_node.append(max_node)
-        new_edges.append((max_node,node_improve))
     return selected_node, cc_after
 
 def degree_only (Graph, node_improve, channels, parameter, alpha = 0.5, beta = 0.5, cycle = True):
