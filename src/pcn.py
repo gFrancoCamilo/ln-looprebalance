@@ -36,7 +36,7 @@ def set_attributes (Graph: nx.DiGraph, option: str):
         k_central_nodes = get_k_most_centralized_nodes (Graph, number_nodes)
         k_central_nodes_dict = dict.fromkeys(k_central_nodes, "True")
 
-        for (i,j) in tqdm(Graph.edges, desc='Assigning capacities'):
+        for (i,j) in tqdm(Graph.edges(), desc='Assigning capacities'):
             if 'capacity' not in Graph[i][j]:
                 if i not in k_central_nodes_dict and j not in k_central_nodes_dict:
                     """Setting channel capacity. Capacity is, by definition, equal in the two directions"""

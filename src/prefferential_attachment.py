@@ -33,23 +33,13 @@ def greedy_algorithm (Graph, node_improve, channels, alpha = 0.5, cycle = True):
             if node == node_improve:
                 continue
             if Graph.has_edge(node_improve, node) == True:
-                continue
-
-              
+                continue            
             
             Graph.add_edge(node_improve, node, fee_base_msat = 100, fee_proportional_millionths=50)
             Graph.add_edge(node, node_improve, fee_base_msat = 100, fee_proportional_millionths=50)
             
-            payment_graph = make_graph_payment(Graph, 4104693)
-            for (i,j) in payment_graph.edges():
-                if type(payment_graph[i][j]['fee']) is str:
-                    payment_graph[i][j]['fee'] = int(payment_graph[i][j]['fee'])
-            new_cc = nx.closeness_centrality(payment_graph, u=node_improve, distance='fee')
-            new_bc = nx.betweenness_centrality(payment_graph, normalized = True, weight='fee')
+            new_reward = calculate_reward(Graph, node_improve, alpha)
             
-            new_reward = (alpha*new_bc[node_improve] + (1-alpha)*new_cc)
-            
-
             if new_reward >= max_reward:
                 if cycle == True:
                     if len(selected_node) != 0:
@@ -75,6 +65,24 @@ def greedy_algorithm (Graph, node_improve, channels, alpha = 0.5, cycle = True):
         cc_after.append(max_reward)
         selected_node.append(max_node)
     return selected_node, cc_after
+
+def calculate_reward (Graph: nx.DiGraph, node, alpha):
+    payment_graph = make_graph_payment(Graph, 4104693)
+    for (i,j) in payment_graph.edges():
+        if type(payment_graph[i][j]['fee']) is str:
+            payment_graph[i][j]['fee'] = int(payment_graph[i][j]['fee'])
+    new_cc = nx.closeness_centrality(payment_graph, u=node, distance='fee')
+    new_bc = nx.betweenness_centrality(payment_graph, normalized = True, weight='fee')
+    return (alpha*new_bc[node] + (1-alpha)*new_cc)
+
+def add_selected_edges (Graph: nx.DiGraph, edges: list, node: str, alpha: float = 0.5):
+    reward = []
+    for edge in edges:
+        Graph.add_edge(node, edge, fee_base_msat = 100, fee_proportional_millionths = 50)
+        Graph.add_edge(edge, node, fee_base_msat = 100, fee_proportional_millionths = 50)
+        reward.append(calculate_reward(Graph,node,alpha))
+    return reward, Graph
+
 
 def sample_pdf (pdf, k: int):
     """

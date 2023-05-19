@@ -44,15 +44,19 @@ def degree_test(Graph, node_diff, cycle, k):
         pdf = get_degree_distribution_pdf(Graph)
         selected_node = sample_pdf(pdf, k)
         payment_graph = make_graph_payment(Graph, 4104693)
-        for node in selected_node:
-            print('Node: ' + str(node))
-            print('Node degree: ' + str(Graph.degree()[node]))
+    for selected in selected_node:
+        print('Node: ' + str(selected))
+        print('Node degree: ' + str(Graph.degree()[selected]))
+    reward, _ = add_selected_edges(Graph, selected_node, node, 0.5)
+    print(reward)
 
 
 
-Graph = graph_names('jul 2022')
+#Graph = graph_names('jul 2022')
+Graph = generate_graph(n=512, m= 3, option='barabasi-albert')
+Graph = set_attributes(Graph, 'lightning')
 Graph = validate_graph(Graph)
-Graph = snowball_sample(Graph, size=512)
+#Graph = snowball_sample(Graph, size=512)
 node_diff = ['new_node']
 
 #greedy_algorithm_test(Graph, node_diff, False, 4)

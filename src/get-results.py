@@ -1,10 +1,12 @@
 from topology import *
 from results import *
 from pcn import *
+from prefferential_attachment import *
 from tqdm import tqdm
 from throughput import *
 import click
 import threading
+import pickle
 
 @click.group(chain=True, invoke_without_command=True)
 def cli():
@@ -97,6 +99,84 @@ def get_channel_troughput (balance, balance_parameter, number_payments, topology
         for (i,j) in Graph.edges():
             if len(Graph[i][j]['payments']) > 2:
                 print(str((i,j)) + ': ' + str(Graph[i][j]['payments']))
+
+@cli.command(name='node-attachment', help='Gets node attachment results')
+@click.option('-t','--topology', default='lightning',
+             type=click.Choice (['watts-strogatz','barabasi-albert', 'lightning'], case_sensitive=False),
+             help = 'Graph topology used in the simulation')
+@click.option('-n','--nodes', type=int, default=512, help='Number of nodes in the topology.')
+@click.option('-k', default=2, help='K parameter for Watts-Strogatz graph. Only used with Watts-Strogatz topology.')
+@click.option('-p', default=0.1, help='P parameter for Watts-Strogatz graph. Only used with Watts-Strogatz topology.')
+@click.option('-m', default=2, help='M parameter for Barabasi-Albert graph. Only used with Watts-Strogatz topology.')
+@click.option('-d', '--date', default='jul 2022', type=click.Choice(['jul 2021', 'jan 2022', 'jul 2022'], case_sensitive=False),
+            help='Date of lighting snapshot to be used in the simulation. Only used with lightning topology.')
+@click.option('-c','--channels', type=int, default = 5, help='Number of channels to create.')
+@click.option('-a', '--alpha', type=float, default = 0.5, help='Alpha parameter for reward computation.')
+@click.option('--cycle', is_flag=True, default=False, help='Greedy attachment strategy focuses on cycle creation.')
+def node_attachment (topology, nodes, k, p, m, date, channels, alpha, cycle):
+    if topology == 'lightning':
+        print('Generating Lightning Graph...')
+        Graph = graph_names(date)
+        print('Snowball sampling Lightning Graph...')
+        Graph = snowball_sample(Graph, size = nodes)
+    elif topology == 'watts-strogatz':
+        print('Generating Watts-Strogatz Graph...')
+        Graph = generate_graph(nodes, k, p, option='watts-strogatz') 
+        print('Setting attributes...')   
+        Graph = set_attributes(Graph, 'lightning')
+    elif topology == 'barabasi-albert':
+        print('Generating Barabasi-Albert Graph...')
+        Graph = generate_graph(nodes, m, option='barabasi-albert') 
+        print('Setting attributes...')
+        Graph = set_attributes(Graph, 'lightning')
+    
+    Graph = validate_graph(Graph)
+    node = 'new_node'
+
+    print('Adding new node to topology using the greedy algorithm')
+    selected_node_greedy, greedy_reward = greedy_algorithm(Graph.copy(), node, channels, alpha, cycle)
+    
+    print('Adding new nodes to topology using uniform distribution...')
+    pdf = get_uniform_distribution_pdf(Graph)
+    selected_node_random = sample_pdf(pdf, channels)
+    random_reward, _ = add_selected_edges(Graph.copy(), selected_node_random, node, 0.5)
+
+    print('Adding new nodes to topology using centrality distribution...')
+    pdf = get_centrality_distribution_pdf(Graph)
+    selected_node_centrality = sample_pdf(pdf, channels)
+    centrality_reward, _ = add_selected_edges(Graph.copy(), selected_node_centrality, node, 0.5)
+
+    print('Adding new nodes to topology using degree distribution...')
+    pdf = get_degree_distribution_pdf(Graph)
+    selected_node_degree = sample_pdf(pdf, channels)
+    degree_reward, _ = add_selected_edges(Graph.copy(), selected_node_degree, node, 0.5)
+
+    print('Adding new nodes to topology using richest nodes distribution...')
+    pdf = get_rich_nodes_pdf(Graph)
+    selected_node_rich = sample_pdf(pdf, channels)
+    rich_reward, _ = add_selected_edges(Graph.copy(), selected_node_rich, node, 0.5)
+
+    greedy_fp = open('../results/node_attachment_results/greedy_' + str(cycle) + '.dat', 'ab+')
+    random_fp = open('../results/node_attachment_results/random_' + str(cycle) + '.dat', 'ab+')
+    centrality_fp = open('../results/node_attachment_results/centrality_' + str(cycle) + '.dat', 'ab+')
+    degree_fp = open('../results/node_attachment_results/degree_' + str(cycle) + '.dat', 'ab+')
+    rich_fp = open('../results/node_attachment_results/rich_' + str(cycle) + '.dat', 'ab+')
+
+    pickle.dump((greedy_reward, selected_node_greedy), greedy_fp)
+    pickle.dump((random_reward, list(selected_node_random)), random_fp)
+    pickle.dump((centrality_reward, list(selected_node_centrality)), centrality_fp)
+    pickle.dump((degree_reward, list(selected_node_degree)), degree_fp)
+    pickle.dump((rich_reward, list(selected_node_rich)), rich_fp)
+
+    greedy_fp.close()
+    random_fp.close()
+    centrality_fp.close()
+    degree_fp.close()
+    rich_fp.close()
+
+    
+    
+
 
 if __name__ == '__main__':
     cli()

@@ -5,16 +5,14 @@ import queue
 import numpy as np
 from multiprocessing import Pool
 
-def generate_graph (n = None, alpha = None, beta = None, gamma = None, k = None, p = None, m = None, option: str = 'lightning'):
+def generate_graph (n = None, alpha = None, beta = None, gamma = None, k = None, p = None, m = None, option: str = 'barabasi-albert'):
     """
     Generates directed graph to be used in the simulation. The available options are scale-free,
     watts-strogatz, and barabasi-albert. While both scale-free and barabasi-albert creates scale-free,
     watts-strogatz option creates a small-world graph. These options are selected because Lightning Network
     behaves both as small-world and scale-free network.
     """
-    if option == 'scale-free':
-        Graph = nx.scale_free_graph(n, alpha, beta, gamma)
-    elif option == 'watts-strogatz':
+    if option == 'watts-strogatz':
         Graph = nx.watts_strogatz_graph(n, k, p)
     elif option == 'barabasi-albert':
         Graph = nx.barabasi_albert_graph(n, m)
