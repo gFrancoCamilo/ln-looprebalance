@@ -156,11 +156,11 @@ def node_attachment (topology, nodes, k, p, m, date, channels, alpha, cycle):
     selected_node_rich = sample_pdf(pdf, channels)
     rich_reward, _ = add_selected_edges(Graph.copy(), selected_node_rich, node, 0.5)
 
-    greedy_fp = open('../results/node_attachment_results/greedy_' + str(cycle) + '.dat', 'ab+')
-    random_fp = open('../results/node_attachment_results/random_' + str(cycle) + '.dat', 'ab+')
-    centrality_fp = open('../results/node_attachment_results/centrality_' + str(cycle) + '.dat', 'ab+')
-    degree_fp = open('../results/node_attachment_results/degree_' + str(cycle) + '.dat', 'ab+')
-    rich_fp = open('../results/node_attachment_results/rich_' + str(cycle) + '.dat', 'ab+')
+    greedy_fp = open('../results/node_attachment_results/greedy_' + str(cycle) + '_' + topology + '.dat', 'ab+')
+    random_fp = open('../results/node_attachment_results/random_' + str(cycle) + '_' + topology + '.dat', 'ab+')
+    centrality_fp = open('../results/node_attachment_results/centrality_' + str(cycle) + '_' + topology + '.dat', 'ab+')
+    degree_fp = open('../results/node_attachment_results/degree_' + str(cycle) + '_' + topology + '.dat', 'ab+')
+    rich_fp = open('../results/node_attachment_results/rich_' + str(cycle) + '_' + topology + '.dat', 'ab+')
 
     pickle.dump((greedy_reward, selected_node_greedy), greedy_fp)
     pickle.dump((random_reward, list(selected_node_random)), random_fp)
