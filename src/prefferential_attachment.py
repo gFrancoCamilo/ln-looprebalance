@@ -17,7 +17,7 @@ def triadic_closure (Graph, node, number_channels, triadic_census, alpha, beta):
     the new connection make the node more profitable or not.
     """
 
-def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, cycle = True):
+def greedy_algorithm (Graph, node_improve, channels, alpha = 0.5, cycle = True):
     if node_improve not in Graph.nodes:
         Graph.add_node(node_improve)
     
@@ -47,8 +47,7 @@ def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, cycle = T
             new_cc = nx.closeness_centrality(payment_graph, u=node_improve, distance='fee')
             new_bc = nx.betweenness_centrality(payment_graph, normalized = True, weight='fee')
             
-            if (node_improve, node) not in new_bc:
-                new_reward = (alpha*new_bc[node_improve] + (1-alpha)*new_cc)
+            new_reward = (alpha*new_bc[node_improve] + (1-alpha)*new_cc)
             
 
             if new_reward >= max_reward:
@@ -76,6 +75,86 @@ def incremental_closeness (Graph, node_improve, channels, alpha = 0.5, cycle = T
         cc_after.append(max_reward)
         selected_node.append(max_node)
     return selected_node, cc_after
+
+def sample_pdf (pdf, k: int):
+    """
+    Samples k items from a PDF.
+    """
+    if k < 0 or k > len(pdf):
+        raise ValueError('k must be between 0 and ' + str(len(pdf)))
+    keys, v = zip(*list(pdf.items()))
+    if k >= len(keys):
+        return keys
+    res = np.random.choice(keys, k, replace = False, p = v)
+    return res
+
+def manipulate_pdf (pdf, skew, smooth):
+    """
+    Skews or smooths a PDF. Skewing a distribution in done by squaring the probabilities and normalizing the pdf.
+    Smoothing a distribution is done by mixing it with a uniform distribution.
+    Although both functions should not be used at the same time, we don't prevent this.
+    Adapted from https://github.com/renepickhardt/lightning-network-autopilot/blob/master/lib_autopilot.py 
+    """
+    if not skew and not smooth:
+        return pdf
+
+    length = len(pdf)
+
+    if skew:
+        pdf = {k:v**2 for k,v in pdf.items()}
+        s = sum(pdf.values())
+        pdf = {k:v/s for k,v in pdf.items()}
+
+    if smooth:
+        pdf = {k:0.5*v + 0.5/length for k,v in pdf.items()}
+    
+    return pdf
+
+
+def get_uniform_distribution_pdf (Graph: nx.DiGraph):
+    """
+    Generates a uniform distribution of nodes in the network. Adapted from
+    https://github.com/renepickhardt/lightning-network-autopilot/blob/master/lib_autopilot.py 
+    """
+    return {n:1/Graph.number_of_nodes() for n in Graph.nodes()}
+
+def get_centrality_distribution_pdf (Graph: nx.DiGraph, skew = False, smooth = False):
+    """
+    Generates a distribution proportional to the betweenness centrality of nodes in the network. Adapted from
+    https://github.com/renepickhardt/lightning-network-autopilot/blob/master/lib_autopilot.py 
+    """
+    pdf = {}
+    cumsum = 0
+
+    """We use fees to determine a node's BC to properly imitate a PCN"""
+    payment_graph = make_graph_payment(Graph, 4104693)
+    for n, score in nx.betweenness_centrality(payment_graph, weight='fee').items():
+        pdf[n] = score
+        cumsum += score
+    
+    pdf = {k:v/cumsum for k, v in pdf.items()}
+
+    return manipulate_pdf(pdf, skew, smooth)
+
+def get_rich_nodes_pdf (Graph: nx.DiGraph, skew = False, smooth = False):
+    """
+    Generates a distribution proportional to the capacity of nodes in the network. Adapted from
+    https://github.com/renepickhardt/lightning-network-autopilot/blob/master/lib_autopilot.py 
+    """
+    rich_nodes = {}
+    network_capacity = 0
+
+    for node in Graph.nodes():
+        node_capacity = 0
+        for neighbor in Graph.neighbors(node):
+            node_capacity += int(Graph[node][neighbor]['capacity'])
+        network_capacity += node_capacity
+        rich_nodes[node] = node_capacity
+
+    rich_nodes = {k:v/network_capacity for k, v in rich_nodes.items()}
+    return manipulate_pdf(rich_nodes, skew, smooth)
+
+
 
 def degree_only (Graph, node_improve, channels, parameter, alpha = 0.5, beta = 0.5, cycle = True):
     if node_improve not in Graph.nodes:
