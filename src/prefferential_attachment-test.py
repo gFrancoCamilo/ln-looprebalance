@@ -36,6 +36,19 @@ def bc_test(Graph, node_diff, cycle, k):
             print('Node: ' + str(node))
             print('Node BC: ' + str(nx.betweenness_centrality(payment_graph, weight = 'fee')[node]))
 
+def degree_test(Graph, node_diff, cycle, k):
+    nodes_file = open("../results/selected_nodes_bc_" + str(cycle),"wb")
+    reward_file = open("../results/reward_bc_" + str(cycle),"wb")
+
+    for node in node_diff:
+        pdf = get_degree_distribution_pdf(Graph)
+        selected_node = sample_pdf(pdf, k)
+        payment_graph = make_graph_payment(Graph, 4104693)
+        for node in selected_node:
+            print('Node: ' + str(node))
+            print('Node degree: ' + str(Graph.degree()[node]))
+
+
 
 Graph = graph_names('jul 2022')
 Graph = validate_graph(Graph)
@@ -43,4 +56,4 @@ Graph = snowball_sample(Graph, size=512)
 node_diff = ['new_node']
 
 #greedy_algorithm_test(Graph, node_diff, False, 4)
-bc_test(Graph, node_diff, False, 4)
+degree_test(Graph, node_diff, False, 4)

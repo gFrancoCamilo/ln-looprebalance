@@ -136,6 +136,22 @@ def get_centrality_distribution_pdf (Graph: nx.DiGraph, skew = False, smooth = F
 
     return manipulate_pdf(pdf, skew, smooth)
 
+def get_degree_distribution_pdf (Graph: nx.DiGraph, skew = False, smooth = False):
+    """
+    Generates a distribution proportional to the betweenness centrality of nodes in the network. Adapted from
+    https://github.com/renepickhardt/lightning-network-autopilot/blob/master/lib_autopilot.py 
+    """
+    pdf = {}
+    cumsum = 0
+    for n, score in dict(Graph.degree()).items():
+        pdf[n] = score
+        cumsum += score
+    
+    pdf = {k:v/cumsum for k, v in pdf.items()}
+
+    return manipulate_pdf(pdf, skew, smooth)
+
+
 def get_rich_nodes_pdf (Graph: nx.DiGraph, skew = False, smooth = False):
     """
     Generates a distribution proportional to the capacity of nodes in the network. Adapted from
