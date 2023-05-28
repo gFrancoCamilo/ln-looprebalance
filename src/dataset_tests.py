@@ -9,7 +9,7 @@ from scipy.fft import fft
 from topology import *
 from pcn import *
 from cycle_finder import *
-#from tqdm import tqdm
+from tqdm import tqdm
 
 def check_ripple_seasonality ():
     df = pd.read_csv('../datasets/transactions-in-USD-jan-2013-aug-2016.txt')
@@ -255,11 +255,47 @@ def plot_cycles_cost ():
     plt.yticks(fontsize=16)
     fig.savefig("../results/cycles_cost.pdf", dpi=300, bbox_inches='tight')
 
+def cheapest_cycles_vs_shortest_cycles (Graph: nx.DiGraph):
+    cheapest_cycle = {}
+    shortest_cycle = {}
+    no_cycle = 0
+    equal = 0
+    total = 0
+
+    payment_graph = make_graph_payment(Graph, 4104693)
+    graph_copy = payment_graph.copy()
+
+    for node in tqdm(Graph.nodes(), desc='Checking shortest and cheapest cycles'):
+        for neighbor in Graph.neighbors(node):
+            attr_ij = Graph[node][neighbor]
+            attr_ji = Graph[neighbor][node]
+                
+            graph_copy.remove_edge(node, neighbor)
+            graph_copy.remove_edge(neighbor, node)
+
+            if nx.has_path(graph_copy, node, neighbor):    
+                cheapest_cycle[(node,neighbor)] = nx.shortest_path(graph_copy, source=node, target=neighbor, weight='fee', method='dijkstra')
+                shortest_cycle[(node,neighbor)] = nx.shortest_path(graph_copy, source=node, target=neighbor, method='dijkstra')
+            else:
+                no_cycle += 1
+
+            graph_copy.add_edge(node, neighbor)
+            graph_copy.add_edge(neighbor, node)
+            graph_copy[node][neighbor].update(attr_ij)
+            graph_copy[neighbor][node].update(attr_ji)
+
+    for (i,j) in cheapest_cycle:
+        if cheapest_cycle[(i,j)] == shortest_cycle[(i,j)]:
+            equal += 1
+    print('No cycle: ' + str(no_cycle))
+    print('Length: ' + str(len(cheapest_cycle)))
+    print(equal/len(cheapest_cycle))
 
 plt.style.use('seaborn-v0_8-colorblind')
 Graph = graph_names('jul 2022')
 Graph = validate_graph(Graph)
-degree_distribution(Graph)
+cheapest_cycles_vs_shortest_cycles(Graph)
+#degree_distribution(Graph)
 
 #my_file = open("../results/check_cycles_cost.dat", "wb")
 #for i in range(4,42,2):
