@@ -7,6 +7,7 @@ from throughput import *
 import click
 import threading
 import pickle
+import uuid
 
 @click.group(chain=True, invoke_without_command=True)
 def cli():
@@ -107,7 +108,7 @@ def get_channel_troughput (balance, balance_parameter, number_payments, topology
 @click.option('-n','--nodes', type=int, default=512, help='Number of nodes in the topology.')
 @click.option('-k', default=2, help='K parameter for Watts-Strogatz graph. Only used with Watts-Strogatz topology.')
 @click.option('-p', default=0.1, help='P parameter for Watts-Strogatz graph. Only used with Watts-Strogatz topology.')
-@click.option('-m', default=2, help='M parameter for Barabasi-Albert graph. Only used with Watts-Strogatz topology.')
+@click.option('-m', type=int,default=2, help='M parameter for Barabasi-Albert graph. Only used with Watts-Strogatz topology.')
 @click.option('-d', '--date', default='jul 2022', type=click.Choice(['jul 2021', 'jan 2022', 'jul 2022'], case_sensitive=False),
             help='Date of lighting snapshot to be used in the simulation. Only used with lightning topology.')
 @click.option('-c','--channels', type=int, default = 5, help='Number of channels to create.')
@@ -121,17 +122,18 @@ def node_attachment (topology, nodes, k, p, m, date, channels, alpha, cycle):
         Graph = snowball_sample(Graph, size = nodes)
     elif topology == 'watts-strogatz':
         print('Generating Watts-Strogatz Graph...')
-        Graph = generate_graph(nodes, k, p, option='watts-strogatz') 
+        Graph = generate_graph(nodes, k=k, p=p, option='watts-strogatz') 
         print('Setting attributes...')   
         Graph = set_attributes(Graph, 'lightning')
     elif topology == 'barabasi-albert':
         print('Generating Barabasi-Albert Graph...')
-        Graph = generate_graph(nodes, m, option='barabasi-albert') 
+        Graph = generate_graph(nodes, m=m, option='barabasi-albert') 
         print('Setting attributes...')
         Graph = set_attributes(Graph, 'lightning')
     
     Graph = validate_graph(Graph)
     node = 'new_node'
+    nx.write_gml(Graph, '../results/node_attachment_results/graphs/'+topology+str(uuid.uuid4())+'.gml')
 
     print('Adding new node to topology using the greedy algorithm')
     selected_node_greedy, greedy_reward = greedy_algorithm(Graph.copy(), node, channels, alpha, cycle)

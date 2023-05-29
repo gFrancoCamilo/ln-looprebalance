@@ -320,5 +320,3 @@ def plot_rewards ():
     plt.grid()
     plt.savefig('../results/node_attachment_results/ws_False.pdf', dpi=600)
 
-plt.style.use('seaborn-v0_8-colorblind')
-plot_rewards()
