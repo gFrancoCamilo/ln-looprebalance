@@ -324,12 +324,15 @@ def plot_rewards ():
     plt.savefig('../results/node_attachment_results/ws_False.pdf', dpi=600)
 
 def plot_bc_stats ():
-    topologies = ['lightning']
+    topologies = ['lightning','barabasi-albert','watts-strogatz']
     algorithms = ['greedy', 'centrality', 'degree', 'rich', 'random']
     lightning = []
     ba = []
     ws = []
     node = 'new_node'
+    os.chdir('../results/node_attachment_results/graphs')
+    graph_files = sorted(filter(os.path.isfile, os.listdir('.')), key=os.path.getmtime)
+    os.chdir('../../../src')
 
     for topology in topologies:
         for heuristic in algorithms:
@@ -346,172 +349,228 @@ def plot_bc_stats ():
                 except EOFError:
                     break
     
-    greedy = []
-    centrality = []
-    degree = []
-    rich = []
-    random = []
-    counter = 0
-    for element in lightning:
-        counter += 1
-        if counter <= 10:
-            greedy.append(element)
-        elif counter <= 20:
-            centrality.append(element)
-        elif counter <= 30:
-            degree.append(element)
-        elif counter <= 40:
-            rich.append(element)
-        elif counter <= 50:
-            random.append(element)
-    
-    Graph = graph_names('jul 2022')
-    Graph = validate_graph(Graph)
-    Graph = snowball_sample(Graph, size = 512)
-    Graph.add_node(node)
-    Graph = make_graph_payment(Graph, 4104693)
+    for topology in topologies:
+        greedy = []
+        centrality = []
+        degree = []
+        rich = []
+        random = []
+        counter = 0
 
-    width = 0.2
-    r = np.arange(10)
+        if topology == 'lightning':
+            topology_vec = lightning
+        elif topology == 'barabasi-albert':
+            topology_vec = ba
+        else:
+            topology_vec = ws
 
-    bc = []
-    
-    bc_mean = []
-    bc_max = []
-    bc_min = []
-    for channels in tqdm(greedy, desc='Calculating rewards for greedy algorithm'):
-        graph_copy = Graph.copy()
-        bc_in = []
-        for edge in channels:
-            graph_copy.add_edge(node, edge, fee_base_msat = 100, fee_proportional_millionths = 50)
-            graph_copy.add_edge(edge, node, fee_base_msat = 100, fee_proportional_millionths = 50)
-            bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
+        for element in topology_vec:
+            counter += 1
+            if counter <= 10:
+                greedy.append(element)
+            elif counter <= 20:
+                centrality.append(element)
+            elif counter <= 30:
+                degree.append(element)
+            elif counter <= 40:
+                rich.append(element)
+            elif counter <= 50:
+                random.append(element)
+        
+        if topology == 'lightning':
+            Graph = graph_names('jul 2022')
+            Graph = validate_graph(Graph)
+            Graph = snowball_sample(Graph, size = 512)
+            Graph.add_node(node)
+            Graph = make_graph_payment(Graph, 4104693)
 
-        bc.append(bc_in)
-    
+        width = 0.2
+        r = np.arange(10)
 
-    bc = [list(a) for a in (zip(*bc))]
+        bc = []
+        
+        bc_mean = []
+        bc_max = []
+        bc_min = []
+        if topology == 'barabasi-albert':
+            counter = 0
+        else:
+            counter = 1
+        for channels in tqdm(greedy, desc='Calculating rewards for greedy algorithm'):
+            if topology == 'barabasi-albert' or topology == 'watts-strogatz':
+                Graph = nx.read_gml('../results/node_attachment_results/graphs/'+graph_files[counter])
+                Graph = make_graph_payment(Graph, 4104693)
+                counter += 2
+                Graph.add_node(node)
+            graph_copy = Graph.copy()
+            bc_in = []
+            for edge in channels:
+                graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
+                graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
+                bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
 
-    for element in bc:
-        bc_mean.append(np.mean(element))
-        bc_max.append(1.96*np.std(element)/np.sqrt(10))
-        bc_min.append(1.96*np.std(element)/np.sqrt(10))
-    bc_err = [bc_min, bc_max]
-    plt.bar(r, bc_mean, yerr=bc_err, label='Greedy', width=width, edgecolor='k')
-    
-    bc = []
-    
-    bc_mean = []
-    bc_max = []
-    bc_min = []
-    for channels in tqdm(centrality, desc='Calculating rewards for centrality algorithm'):
-        graph_copy = Graph.copy()
-        bc_in = []
-        for edge in channels:
-            graph_copy.add_edge(node, edge, fee_base_msat = 100, fee_proportional_millionths = 50)
-            graph_copy.add_edge(edge, node, fee_base_msat = 100, fee_proportional_millionths = 50)
-            bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
+            bc.append(bc_in)
+        
 
-        bc.append(bc_in)
-    
+        bc = [list(a) for a in (zip(*bc))]
 
-    bc = [list(a) for a in (zip(*bc))]
+        for element in bc:
+            bc_mean.append(np.mean(element))
+            bc_max.append(1.96*np.std(element)/np.sqrt(10))
+            bc_min.append(1.96*np.std(element)/np.sqrt(10))
+        bc_err = [bc_min, bc_max]
+        plt.bar(r, bc_mean, yerr=bc_err, label='Greedy', width=width, edgecolor='k')
+        
+        bc = []
+        
+        bc_mean = []
+        bc_max = []
+        bc_min = []
+        if topology == 'barabasi-albert':
+            counter = 0
+        else:
+            counter = 1
+        for channels in tqdm(centrality, desc='Calculating rewards for centrality algorithm'):
+            if topology == 'barabasi-albert' or topology == 'watts-strogatz':
+                Graph = nx.read_gml('../results/node_attachment_results/graphs/'+graph_files[counter])
+                Graph = make_graph_payment(Graph, 4104693)
+                counter += 2
+                Graph.add_node(node)
+            graph_copy = Graph.copy()
+            bc_in = []
+            for edge in channels:
+                graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
+                graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
+                bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
 
-    for element in bc:
-        bc_mean.append(np.mean(element))
-        bc_max.append(1.96*np.std(element)/np.sqrt(10))
-        bc_min.append(1.96*np.std(element)/np.sqrt(10))
-    bc_err = [bc_min, bc_max]
-    plt.bar(r + width, bc_mean, yerr=bc_err, label='Centrality', width=width, hatch='/', edgecolor='k')
+            bc.append(bc_in)
+        
 
-    bc = []
-    
-    bc_mean = []
-    bc_max = []
-    bc_min = []
-    for channels in tqdm(degree, desc='Calculating rewards for degree algorithm'):
-        graph_copy = Graph.copy()
-        bc_in = []
-        for edge in channels:
-            graph_copy.add_edge(node, edge, fee_base_msat = 100, fee_proportional_millionths = 50)
-            graph_copy.add_edge(edge, node, fee_base_msat = 100, fee_proportional_millionths = 50)
-            bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
+        bc = [list(a) for a in (zip(*bc))]
 
-        bc.append(bc_in)
-    
+        for element in bc:
+            bc_mean.append(np.mean(element))
+            bc_max.append(1.96*np.std(element)/np.sqrt(10))
+            bc_min.append(1.96*np.std(element)/np.sqrt(10))
+        bc_err = [bc_min, bc_max]
+        plt.bar(r + width, bc_mean, yerr=bc_err, label='Centrality', width=width, hatch='/', edgecolor='k')
 
-    bc = [list(a) for a in (zip(*bc))]
+        bc = []
+        
+        bc_mean = []
+        bc_max = []
+        bc_min = []
+        if topology == 'barabasi-albert':
+            counter = 0
+        else:
+            counter = 1
+        for channels in tqdm(degree, desc='Calculating rewards for degree algorithm'):
+            if topology == 'barabasi-albert' or topology == 'watts-strogatz':
+                Graph = nx.read_gml('../results/node_attachment_results/graphs/'+graph_files[counter])
+                Graph = make_graph_payment(Graph, 4104693)
+                counter += 2
+                Graph.add_node(node)
+            graph_copy = Graph.copy()
+            bc_in = []
+            for edge in channels:
+                graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
+                graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
+                bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
 
-    for element in bc:
-        bc_mean.append(np.mean(element))
-        bc_max.append(1.96*np.std(element)/np.sqrt(10))
-        bc_min.append(1.96*np.std(element)/np.sqrt(10))
-    bc_err = [bc_min, bc_max]
-    plt.bar(r + 2*width, bc_mean, yerr=bc_err, label='Degree', width=width, hatch='x', edgecolor='k')
+            bc.append(bc_in)
+        
 
-    bc = []
-    
-    bc_mean = []
-    bc_max = []
-    bc_min = []
-    for channels in tqdm(rich, desc='Calculating rewards for rich algorithm'):
-        graph_copy = Graph.copy()
-        bc_in = []
-        for edge in channels:
-            graph_copy.add_edge(node, edge, fee_base_msat = 100, fee_proportional_millionths = 50)
-            graph_copy.add_edge(edge, node, fee_base_msat = 100, fee_proportional_millionths = 50)
-            bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
+        bc = [list(a) for a in (zip(*bc))]
 
-        bc.append(bc_in)
-    
+        for element in bc:
+            bc_mean.append(np.mean(element))
+            bc_max.append(1.96*np.std(element)/np.sqrt(10))
+            bc_min.append(1.96*np.std(element)/np.sqrt(10))
+        bc_err = [bc_min, bc_max]
+        plt.bar(r + 2*width, bc_mean, yerr=bc_err, label='Degree', width=width, hatch='x', edgecolor='k')
 
-    bc = [list(a) for a in (zip(*bc))]
+        bc = []
+        
+        bc_mean = []
+        bc_max = []
+        bc_min = []
+        if topology == 'barabasi-albert':
+            counter = 0
+        else:
+            counter = 1
+        for channels in tqdm(rich, desc='Calculating rewards for rich algorithm'):
+            if topology == 'barabasi-albert' or topology == 'watts-strogatz':
+                Graph = nx.read_gml('../results/node_attachment_results/graphs/'+graph_files[counter])
+                Graph = make_graph_payment(Graph, 4104693)
+                counter += 2
+                Graph.add_node(node)
+            graph_copy = Graph.copy()
+            bc_in = []
+            for edge in channels:
+                graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
+                graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
+                bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
 
-    for element in bc:
-        bc_mean.append(np.mean(element))
-        bc_max.append(1.96*np.std(element)/np.sqrt(10))
-        bc_min.append(1.96*np.std(element)/np.sqrt(10))
-    bc_err = [bc_min, bc_max]
-    plt.bar(r + 3*width, bc_mean, yerr=bc_err, label='Rich', width=width, hatch='.', edgecolor='k')
+            bc.append(bc_in)
+        
 
-    bc = []
-    
-    bc_mean = []
-    bc_max = []
-    bc_min = []
-    for channels in tqdm(random, desc='Calculating rewards for random algorithm'):
-        graph_copy = Graph.copy()
-        bc_in = []
-        for edge in channels:
-            graph_copy.add_edge(node, edge, fee_base_msat = 100, fee_proportional_millionths = 50)
-            graph_copy.add_edge(edge, node, fee_base_msat = 100, fee_proportional_millionths = 50)
-            bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
+        bc = [list(a) for a in (zip(*bc))]
 
-        bc.append(bc_in)
-    
+        for element in bc:
+            bc_mean.append(np.mean(element))
+            bc_max.append(1.96*np.std(element)/np.sqrt(10))
+            bc_min.append(1.96*np.std(element)/np.sqrt(10))
+        bc_err = [bc_min, bc_max]
+        plt.bar(r + 3*width, bc_mean, yerr=bc_err, label='Rich', width=width, hatch='.', edgecolor='k')
 
-    bc = [list(a) for a in (zip(*bc))]
+        bc = []
+        
+        bc_mean = []
+        bc_max = []
+        bc_min = []
+        if topology == 'barabasi-albert':
+            counter = 0
+        else:
+            counter = 1
+        for channels in tqdm(random, desc='Calculating rewards for random algorithm'):
+            if topology == 'barabasi-albert' or topology == 'watts-strogatz':
+                Graph = nx.read_gml('../results/node_attachment_results/graphs/'+graph_files[counter])
+                Graph = make_graph_payment(Graph, 4104693)
+                counter += 2
+                Graph.add_node(node)
+            graph_copy = Graph.copy()
+            bc_in = []
+            for edge in channels:
+                graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
+                graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
+                bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
 
-    for element in bc:
-        bc_mean.append(np.mean(element))
-        bc_max.append(1.96*np.std(element)/np.sqrt(10))
-        bc_min.append(1.96*np.std(element)/np.sqrt(10))
-    bc_err = [bc_min, bc_max]
-    plt.bar(r + 4*width, bc_mean, yerr=bc_err, label='Random', width=width, hatch='+', edgecolor='k')
+            bc.append(bc_in)
+        
 
-    plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
-                mode="expand", borderaxespad=0, ncol=5)
-    plt.xticks(r + 2*width, (1,2,3,4,5,6,7,8,9,10))
-    plt.xlim(1,10)
+        bc = [list(a) for a in (zip(*bc))]
 
-    plt.ylabel('Probability of Collecting Fees',fontsize=16)
-    plt.xlabel('# of Neighbors',fontsize = 16)
-    
-    plt.xticks(fontsize=16)
-    plt.yticks(fontsize=16)
-    plt.tight_layout()
+        for element in bc:
+            bc_mean.append(np.mean(element))
+            bc_max.append(1.96*np.std(element)/np.sqrt(10))
+            bc_min.append(1.96*np.std(element)/np.sqrt(10))
+        bc_err = [bc_min, bc_max]
+        plt.bar(r + 4*width, bc_mean, yerr=bc_err, label='Random', width=width, hatch='+', edgecolor='k')
 
-    plt.savefig('../results/node_attachment_results/collect_fee_lightning.pdf', dpi=600)
+        plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
+                    mode="expand", borderaxespad=0, ncol=5)
+        plt.xticks(r + 2*width, (1,2,3,4,5,6,7,8,9,10))
+        plt.xlim(0.75,10)
+
+        plt.ylabel('Probability of Collecting Fees',fontsize=16)
+        plt.xlabel('# of Neighbors',fontsize = 16)
+        
+        plt.xticks(fontsize=16)
+        plt.yticks(fontsize=16)
+        plt.tight_layout()
+
+        plt.savefig('../results/node_attachment_results/collect_fee_'+topology+'.pdf', dpi=600)
+        plt.clf()
     
 def plot_cc_stats ():
     topologies = ['lightning', 'barabasi-albert','watts-strogatz']
@@ -710,7 +769,6 @@ def plot_cc_stats ():
                 cc_in.append(np.mean(average_shortest_path))
 
             cc.append(cc_in)
-            print(cc_in)
 
         cc = [list(a) for a in (zip(*cc))]
 
@@ -766,6 +824,6 @@ def plot_cc_stats ():
         plt.xticks(fontsize=16)
         plt.yticks(fontsize=16)
         plt.tight_layout()
-        plt.show()
-        #plt.savefig('../results/node_attachment_results/paid_fee_lightning.pdf', dpi=600)
-plot_cc_stats()
+        
+        plt.savefig('../results/node_attachment_results/paid_fee_'+topology+'.pdf', dpi=600)
+        plt.clf()
