@@ -262,13 +262,13 @@ def cheapest_cycles_vs_shortest_cycles (Graph: nx.DiGraph):
     equal = 0
     total = 0
 
-    payment_graph = make_graph_payment(Graph, 4104693)
+    payment_graph = make_graph_payment(Graph.copy(), 4104693)
     graph_copy = payment_graph.copy()
 
     for node in tqdm(Graph.nodes(), desc='Checking shortest and cheapest cycles'):
         for neighbor in Graph.neighbors(node):
-            attr_ij = Graph[node][neighbor]
-            attr_ji = Graph[neighbor][node]
+            attr_ij = graph_copy[node][neighbor]
+            attr_ji = graph_copy[neighbor][node]
                 
             graph_copy.remove_edge(node, neighbor)
             graph_copy.remove_edge(neighbor, node)
@@ -284,13 +284,61 @@ def cheapest_cycles_vs_shortest_cycles (Graph: nx.DiGraph):
             graph_copy[node][neighbor].update(attr_ij)
             graph_copy[neighbor][node].update(attr_ji)
 
+    increase = []
     for (i,j) in cheapest_cycle:
         if cheapest_cycle[(i,j)] == shortest_cycle[(i,j)]:
             equal += 1
+        else:
+            cheapest_accumulator = 0
+            for index in range(len(cheapest_cycle[(i,j)])-1):
+                cheapest_accumulator += graph_copy[cheapest_cycle[(i,j)][index]][cheapest_cycle[(i,j)][index+1]]['fee']
+            shortest_accumulator = 0
+            for index in range(len(shortest_cycle[(i,j)])-1):
+                shortest_accumulator += graph_copy[shortest_cycle[(i,j)][index]][shortest_cycle[(i,j)][index+1]]['fee']
+            increase.append((cheapest_accumulator,shortest_accumulator))
+    difference = []
+    for (cheapest, shortest) in increase:
+        if cheapest != 0:
+            difference.append(shortest/cheapest)
+
     print('No cycle: ' + str(no_cycle))
     print('Length: ' + str(len(cheapest_cycle)))
+    print('Average Difference: ' + str(np.mean(difference)))
     print(equal/len(cheapest_cycle))
 
+def check_fees_change ():
+    snapshots = sorted([f for f in os.listdir('../ln-snapshots/') if f.endswith('recovered-capacitated.gml')])
+    snapshots = [snapshots[0], snapshots[2]]
+    print(snapshots)
+    graphs = []
+    for snapshot in tqdm(snapshots, desc='Evaluating snapshots'):
+        graphs.append(nx.read_gml('../ln-snapshots/'+snapshot))
+    for graph in graphs:
+        print(graph.number_of_edges())
+    intersection_graph = nx.intersection_all(graphs)
+    print(len(intersection_graph.edges()))
+    edge_fees = {}
+    for (i,j) in intersection_graph.edges():
+        base = graphs[0][i][j]['fee_base_msat']
+        rate = graphs[0][i][j]['fee_proportional_millionths']
+        edge_fees[(i,j)] = ((base,rate),True)
+    
+    for graph in graphs:
+        for edge in edge_fees:
+            (i,j) = edge
+            (fees, same) = edge_fees[(i,j)]
+            (base, rate) = fees
+            if graph[i][j]['fee_base_msat'] != base or graph[i][j]['fee_proportional_millionths'] != rate:
+                edge_fees[(i,j)] = (fees,False)
+    counter = 0
+    for (i,j) in edge_fees:
+        (_, same) = edge_fees[(i,j)]
+        if same == True:
+            counter += 1
+    print(counter/len(edge_fees))
+
+
+#check_fees_change()
 plt.style.use('seaborn-v0_8-colorblind')
 Graph = graph_names('jul 2022')
 Graph = validate_graph(Graph)
