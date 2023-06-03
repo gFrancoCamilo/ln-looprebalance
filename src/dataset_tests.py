@@ -308,41 +308,89 @@ def cheapest_cycles_vs_shortest_cycles (Graph: nx.DiGraph):
 
 def check_fees_change ():
     snapshots = sorted([f for f in os.listdir('../ln-snapshots/') if f.endswith('recovered-capacitated.gml')])
-    snapshots = [snapshots[0], snapshots[2]]
+    snapshots = [snapshots[1], snapshots[3]]
     print(snapshots)
     graphs = []
     for snapshot in tqdm(snapshots, desc='Evaluating snapshots'):
         graphs.append(nx.read_gml('../ln-snapshots/'+snapshot))
-    for graph in graphs:
-        print(graph.number_of_edges())
     intersection_graph = nx.intersection_all(graphs)
-    print(len(intersection_graph.edges()))
-    edge_fees = {}
+    edge_base_fees = {}
+    edge_rate_fees = {}
     for (i,j) in intersection_graph.edges():
         base = graphs[0][i][j]['fee_base_msat']
         rate = graphs[0][i][j]['fee_proportional_millionths']
-        edge_fees[(i,j)] = ((base,rate),True)
+        edge_base_fees[(i,j)] = (base,True)
+        edge_rate_fees[(i,j)] = (rate,True)
     
-    for graph in graphs:
-        for edge in edge_fees:
-            (i,j) = edge
-            (fees, same) = edge_fees[(i,j)]
-            (base, rate) = fees
-            if graph[i][j]['fee_base_msat'] != base or graph[i][j]['fee_proportional_millionths'] != rate:
-                edge_fees[(i,j)] = (fees,False)
-    counter = 0
-    for (i,j) in edge_fees:
-        (_, same) = edge_fees[(i,j)]
+    for edge in edge_base_fees:
+        (i,j) = edge
+        (base, same_base) = edge_base_fees[(i,j)]
+        (rate, same_rate) = edge_rate_fees[(i,j)]
+        if graphs[1][i][j]['fee_base_msat'] != base:  
+            edge_base_fees[(i,j)] = (base,False)
+        if graphs[1][i][j]['fee_proportional_millionths'] != rate:
+            edge_rate_fees[(i,j)] = (rate,False)
+
+    rate_counter = 0
+    base_counter = 0
+    base_difference = []
+    rate_difference = []
+    for (i,j) in edge_base_fees:
+        (base, same) = edge_base_fees[(i,j)]
         if same == True:
-            counter += 1
-    print(counter/len(edge_fees))
+            base_counter += 1
+        else:
+            base_difference.append((base,graphs[1][i][j]['fee_base_msat']))
+        (rate, same) = edge_rate_fees[(i,j)]
+        if same == True:
+            rate_counter += 1
+        else:
+            rate_difference.append((rate,graphs[1][i][j]['fee_proportional_millionths']))
+    print('Base fee didn\'t change: ' + str(base_counter/len(edge_base_fees)))
+    print('Rate fee didn\'t change: ' + str(rate_counter/len(edge_rate_fees)))
+
+    decreased_base = 0
+    zero_counter = 0
+    for (before,after) in rate_difference:
+        if after < before:
+            decreased_base += 1
+        if after == 0:
+            zero_counter += 1
+    print('Decreased base fee: ' + str(decreased_base/len(base_difference)))
+    print('Removed base fee: ' + str(zero_counter/len(base_difference)))
+
+    cycle_cost = []
+    for node in tqdm(intersection_graph.nodes(), desc='Checking cheapest cycle change'):
+        graph0_copy = graphs[0].copy()
+        graph1_copy = graphs[1].copy()
+        for neighbor in graphs[0].neighbors(node):
+            if neighbor not in graphs[1].neighbors(node):
+                continue
+            attr_ij = graph_copy[node][neighbor]
+            attr_ji = graph_copy[neighbor][node]
+                
+            graph0_copy.remove_edge(node, neighbor)
+            graph0_copy.remove_edge(neighbor, node)
+            graph1_copy.remove_edge(node, neighbor)
+            graph1_copy.remove_edge(neighbor, node)
+
+            if nx.has_path(graph0_copy, node, neighbor) and nx.has_path(graph1_copy, node, neighbor):    
+                cheapest_cycle[(node,neighbor)] = nx.shortest_path(graph_copy, source=node, target=neighbor, weight='fee', method='dijkstra')
+                shortest_cycle[(node,neighbor)] = nx.shortest_path(graph_copy, source=node, target=neighbor, method='dijkstra')
+            else:
+                no_cycle += 1
+
+            graph_copy.add_edge(node, neighbor)
+            graph_copy.add_edge(neighbor, node)
+            graph_copy[node][neighbor].update(attr_ij)
+            graph_copy[neighbor][node].update(attr_ji)
 
 
-#check_fees_change()
-plt.style.use('seaborn-v0_8-colorblind')
-Graph = graph_names('jul 2022')
-Graph = validate_graph(Graph)
-cheapest_cycles_vs_shortest_cycles(Graph)
+check_fees_change()
+#plt.style.use('seaborn-v0_8-colorblind')
+#Graph = graph_names('jul 2022')
+#Graph = validate_graph(Graph)
+#cheapest_cycles_vs_shortest_cycles(Graph)
 #degree_distribution(Graph)
 
 #my_file = open("../results/check_cycles_cost.dat", "wb")
