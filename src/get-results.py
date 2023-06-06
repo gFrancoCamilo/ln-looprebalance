@@ -133,48 +133,52 @@ def node_attachment (topology, nodes, k, p, m, date, channels, alpha, cycle):
     
     Graph = validate_graph(Graph)
     node = 'new_node'
-    nx.write_gml(Graph, '../results/node_attachment_results/graphs/'+topology+str(uuid.uuid4())+'.gml')
+    nx.write_gml(Graph, '../results/node_attachment_results/graphs/'+topology+str(uuid.uuid4())+'_'+str(cycle)+'_alpha_'+str(alpha)+'.gml')
 
     print('Adding new node to topology using the greedy algorithm')
     selected_node_greedy, greedy_reward = greedy_algorithm(Graph.copy(), node, channels, alpha, cycle)
+    greedy_fp = open('../results/node_attachment_results/greedy_' + str(cycle) + '_' + topology + '_alpha_'+str(alpha)+'.dat', 'ab+')
     
-    print('Adding new nodes to topology using uniform distribution...')
-    pdf = get_uniform_distribution_pdf(Graph)
-    selected_node_random = sample_pdf(pdf, channels)
-    random_reward, _ = add_selected_edges(Graph.copy(), selected_node_random, node, 0.5)
+    if cycle == False:
+        print('Adding new nodes to topology using uniform distribution...')
+        pdf = get_uniform_distribution_pdf(Graph)
+        selected_node_random = sample_pdf(pdf, channels)
+        random_reward, _ = add_selected_edges(Graph.copy(), selected_node_random, node, alpha)
 
-    print('Adding new nodes to topology using centrality distribution...')
-    pdf = get_centrality_distribution_pdf(Graph)
-    selected_node_centrality = sample_pdf(pdf, channels)
-    centrality_reward, _ = add_selected_edges(Graph.copy(), selected_node_centrality, node, 0.5)
+        print('Adding new nodes to topology using centrality distribution...')
+        pdf = get_centrality_distribution_pdf(Graph)
+        selected_node_centrality = sample_pdf(pdf, channels)
+        centrality_reward, _ = add_selected_edges(Graph.copy(), selected_node_centrality, node, alpha)
 
-    print('Adding new nodes to topology using degree distribution...')
-    pdf = get_degree_distribution_pdf(Graph)
-    selected_node_degree = sample_pdf(pdf, channels)
-    degree_reward, _ = add_selected_edges(Graph.copy(), selected_node_degree, node, 0.5)
+        print('Adding new nodes to topology using degree distribution...')
+        pdf = get_degree_distribution_pdf(Graph)
+        selected_node_degree = sample_pdf(pdf, channels)
+        degree_reward, _ = add_selected_edges(Graph.copy(), selected_node_degree, node, alpha)
 
-    print('Adding new nodes to topology using richest nodes distribution...')
-    pdf = get_rich_nodes_pdf(Graph)
-    selected_node_rich = sample_pdf(pdf, channels)
-    rich_reward, _ = add_selected_edges(Graph.copy(), selected_node_rich, node, 0.5)
+        print('Adding new nodes to topology using richest nodes distribution...')
+        pdf = get_rich_nodes_pdf(Graph)
+        selected_node_rich = sample_pdf(pdf, channels)
+        rich_reward, _ = add_selected_edges(Graph.copy(), selected_node_rich, node, alpha)
 
-    greedy_fp = open('../results/node_attachment_results/greedy_' + str(cycle) + '_' + topology + '.dat', 'ab+')
-    random_fp = open('../results/node_attachment_results/random_' + str(cycle) + '_' + topology + '.dat', 'ab+')
-    centrality_fp = open('../results/node_attachment_results/centrality_' + str(cycle) + '_' + topology + '.dat', 'ab+')
-    degree_fp = open('../results/node_attachment_results/degree_' + str(cycle) + '_' + topology + '.dat', 'ab+')
-    rich_fp = open('../results/node_attachment_results/rich_' + str(cycle) + '_' + topology + '.dat', 'ab+')
+        if cycle == False:
+            random_fp = open('../results/node_attachment_results/random_' + str(cycle) + '_' + topology + '_alpha_'+str(alpha)+'.dat', 'ab+')
+            centrality_fp = open('../results/node_attachment_results/centrality_' + str(cycle) + '_' + topology + '_alpha_'+str(alpha)+'.dat', 'ab+')
+            degree_fp = open('../results/node_attachment_results/degree_' + str(cycle) + '_' + topology + '_alpha_'+str(alpha)+'.dat', 'ab+')
+            rich_fp = open('../results/node_attachment_results/rich_' + str(cycle) + '_' + topology + '_alpha_'+str(alpha)+'.dat', 'ab+')
 
     pickle.dump((greedy_reward, selected_node_greedy), greedy_fp)
-    pickle.dump((random_reward, list(selected_node_random)), random_fp)
-    pickle.dump((centrality_reward, list(selected_node_centrality)), centrality_fp)
-    pickle.dump((degree_reward, list(selected_node_degree)), degree_fp)
-    pickle.dump((rich_reward, list(selected_node_rich)), rich_fp)
+    if cycle == False:
+        pickle.dump((random_reward, list(selected_node_random)), random_fp)
+        pickle.dump((centrality_reward, list(selected_node_centrality)), centrality_fp)
+        pickle.dump((degree_reward, list(selected_node_degree)), degree_fp)
+        pickle.dump((rich_reward, list(selected_node_rich)), rich_fp)
 
     greedy_fp.close()
-    random_fp.close()
-    centrality_fp.close()
-    degree_fp.close()
-    rich_fp.close()
+    if cycle == False:
+        random_fp.close()
+        centrality_fp.close()
+        degree_fp.close()
+        rich_fp.close()
 
     
     
