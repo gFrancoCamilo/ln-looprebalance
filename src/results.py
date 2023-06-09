@@ -323,7 +323,7 @@ def plot_rewards ():
     plt.grid()
     plt.savefig('../results/node_attachment_results/ws_False.pdf', dpi=600)
 
-def plot_bc_stats ():
+def plot_bc_stats (alpha):
     topologies = ['lightning','barabasi-albert','watts-strogatz']
     algorithms = ['greedy', 'centrality', 'degree', 'rich', 'random']
     lightning = []
@@ -331,12 +331,18 @@ def plot_bc_stats ():
     ws = []
     node = 'new_node'
     os.chdir('../results/node_attachment_results/graphs')
-    graph_files = sorted(filter(os.path.isfile, os.listdir('.')), key=os.path.getmtime)
+    graph_files_all = sorted(filter(os.path.isfile, os.listdir('.')), key=os.path.getmtime)
     os.chdir('../../../src')
+    
+    graph_files = []
+    for graph_file in graph_files_all:
+        if graph_file.endswith(str(alpha)+'.gml'):
+            graph_files.append(graph_file)
+
 
     for topology in topologies:
         for heuristic in algorithms:
-            fp = open('../results/node_attachment_results/'+heuristic+'_False_'+topology+'.dat','rb')
+            fp = open('../results/node_attachment_results/'+heuristic+'_False_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
             while True:
                 try:
                     (_, aux) = pickle.load(fp)
@@ -569,10 +575,10 @@ def plot_bc_stats ():
         plt.yticks(fontsize=16)
         plt.tight_layout()
 
-        plt.savefig('../results/node_attachment_results/collect_fee_'+topology+'.pdf', dpi=600)
+        plt.savefig('../results/node_attachment_results/collect_fee_'+topology+'_alpha_'+str(alpha)+'.pdf', dpi=600)
         plt.clf()
     
-def plot_cc_stats ():
+def plot_cc_stats (alpha):
     topologies = ['lightning', 'barabasi-albert','watts-strogatz']
     algorithms = ['greedy', 'centrality', 'degree', 'rich', 'random']
     lightning = []
@@ -580,12 +586,17 @@ def plot_cc_stats ():
     ws = []
     node = 'new_node'
     os.chdir('../results/node_attachment_results/graphs')
-    graph_files = sorted(filter(os.path.isfile, os.listdir('.')), key=os.path.getmtime)
+    graph_files_all = sorted(filter(os.path.isfile, os.listdir('.')), key=os.path.getmtime)
     os.chdir('../../../src')
+
+    graph_files = []
+    for graph_file in graph_files_all:
+        if graph_file.endswith(str(alpha)+'.gml'):
+            graph_files.append(graph_file)
 
     for topology in topologies:
         for heuristic in algorithms:
-            fp = open('../results/node_attachment_results/'+heuristic+'_False_'+topology+'.dat','rb')
+            fp = open('../results/node_attachment_results/'+heuristic+'_False_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
             while True:
                 try:
                     (_, aux) = pickle.load(fp)
@@ -825,5 +836,5 @@ def plot_cc_stats ():
         plt.yticks(fontsize=16)
         plt.tight_layout()
         
-        plt.savefig('../results/node_attachment_results/paid_fee_'+topology+'.pdf', dpi=600)
+        plt.savefig('../results/node_attachment_results/paid_fee_'+topology+'_alpha_'+str(alpha)+'.pdf', dpi=600)
         plt.clf()
