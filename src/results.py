@@ -10,6 +10,9 @@ import random as rnd
 import networkx as nx
 import numpy as np
 import scipy.stats as st
+import matplotlib as mpl
+mpl.rcParams['text.usetex'] = True
+mpl.rcParams['text.latex.preamble'] = r'\usepackage{libertine}'
 import matplotlib.pyplot as plt
 
 plt.style.use('seaborn-v0_8-colorblind')
@@ -37,7 +40,7 @@ def get_success_ratio (Graph: nx.DiGraph, payment_dict: dict, lnd: bool = True, 
             total_payments += 1
     return successful_payments/total_payments
 
-def plot_rewards ():
+def plot_rewards (alpha):
     topologies = ['lightning','barabasi-albert','watts-strogatz']
     algorithms = ['greedy', 'centrality', 'degree', 'rich', 'random']
     
@@ -47,7 +50,7 @@ def plot_rewards ():
 
     for topology in topologies:
         for heuristic in algorithms:
-            fp = open('../results/node_attachment_results/'+heuristic+'_False_'+topology+'.dat','rb')
+            fp = open('../results/node_attachment_results/'+heuristic+'_False_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
             while True:
                 try:
                     (aux, _) = pickle.load(fp)
@@ -136,16 +139,16 @@ def plot_rewards ():
         random_min.append(1.96*np.std(element)/np.sqrt(10))
     random_err = [random_min, random_max]
     plt.errorbar(x, random_mean, yerr=random_err, ls=(0, (3, 1, 1, 1, 1, 1)), label='Random', lw=2)
-    plt.legend()
+    plt.legend(fontsize=16)
 
-    plt.ylabel('Reward', fontsize=16)
-    plt.xlabel('Channels Created', fontsize=16)
-    plt.yticks(fontsize=16)
-    plt.xticks(fontsize=16)
+    plt.ylabel('Incentive', fontsize=24)
+    plt.xlabel('\# of Neighbors', fontsize=24)
+    plt.yticks(fontsize=24)
+    plt.xticks(fontsize=24)
 
     plt.tight_layout()
     plt.grid()
-    plt.savefig('../results/node_attachment_results/lightning_False.pdf', dpi=600)
+    plt.savefig('../results/node_attachment_results/lightning_False'+str(alpha)+'.pdf', dpi=600)
     plt.clf()
 
     greedy = []
@@ -224,16 +227,16 @@ def plot_rewards ():
         random_min.append(1.96*np.std(element)/np.sqrt(10))
     random_err = [random_min, random_max]
     plt.errorbar(x, random_mean, yerr=random_err, ls=(0, (3, 1, 1, 1, 1, 1)), label='Random', lw=2)
-    plt.legend()
+    plt.legend(fontsize=16)
 
-    plt.ylabel('Reward', fontsize=16)
-    plt.xlabel('Channels Created', fontsize=16)
-    plt.yticks(fontsize=16)
-    plt.xticks(fontsize=16)
+    plt.ylabel('Incentive', fontsize=24)
+    plt.xlabel('\# of Neighbors', fontsize=24)
+    plt.yticks(fontsize=24)
+    plt.xticks(fontsize=24)
 
     plt.tight_layout()
     plt.grid()
-    plt.savefig('../results/node_attachment_results/ba_False.pdf', dpi=600)
+    plt.savefig('../results/node_attachment_results/ba_False'+str(alpha)+'.pdf', dpi=600)
     plt.clf()
 
     greedy = []
@@ -312,16 +315,16 @@ def plot_rewards ():
         random_min.append(1.96*np.std(element)/np.sqrt(10))
     random_err = [random_min, random_max]
     plt.errorbar(x, random_mean, yerr=random_err, ls=(0, (3, 1, 1, 1, 1, 1)), label='Random', lw=2)
-    plt.legend()
+    plt.legend(fontsize=16)
 
-    plt.ylabel('Reward', fontsize=16)
-    plt.xlabel('Channels Created', fontsize=16)
-    plt.yticks(fontsize=16)
-    plt.xticks(fontsize=16)
+    plt.ylabel('Incentive', fontsize=24)
+    plt.xlabel('\# of Neighbors', fontsize=24)
+    plt.yticks(fontsize=24)
+    plt.xticks(fontsize=24)
 
     plt.tight_layout()
     plt.grid()
-    plt.savefig('../results/node_attachment_results/ws_False.pdf', dpi=600)
+    plt.savefig('../results/node_attachment_results/ws_False'+str(alpha)+'.pdf', dpi=600)
 
 def plot_bc_stats (alpha):
     topologies = ['lightning','barabasi-albert','watts-strogatz']
@@ -336,7 +339,7 @@ def plot_bc_stats (alpha):
     
     graph_files = []
     for graph_file in graph_files_all:
-        if graph_file.endswith(str(alpha)+'.gml'):
+        if graph_file.endswith(str(alpha)+'.gml') and graph_file.startswith('lightning')==False:
             graph_files.append(graph_file)
 
 
@@ -569,7 +572,7 @@ def plot_bc_stats (alpha):
         plt.xlim(0.75,10)
 
         plt.ylabel('Probability of Collecting Fees',fontsize=16)
-        plt.xlabel('# of Neighbors',fontsize = 16)
+        plt.xlabel('\# of Neighbors',fontsize = 16)
         
         plt.xticks(fontsize=16)
         plt.yticks(fontsize=16)
@@ -591,7 +594,7 @@ def plot_cc_stats (alpha):
 
     graph_files = []
     for graph_file in graph_files_all:
-        if graph_file.endswith(str(alpha)+'.gml'):
+        if graph_file.endswith(str(alpha)+'.gml') and graph_file.startswith('lightning')==False:
             graph_files.append(graph_file)
 
     for topology in topologies:
@@ -830,7 +833,7 @@ def plot_cc_stats (alpha):
         plt.xticks(r + 2*width, (1,2,3,4,5,6,7,8,9,10))
 
         plt.ylabel('Average of Paying Fees (satoshis)',fontsize=16)
-        plt.xlabel('# of Neighbors',fontsize = 16)
+        plt.xlabel('\# of Neighbors',fontsize = 16)
         
         plt.xticks(fontsize=16)
         plt.yticks(fontsize=16)
