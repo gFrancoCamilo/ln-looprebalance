@@ -383,6 +383,9 @@ def plot_bc_stats (alpha, cycle=False):
             topology_vec = ws
 
         for element in topology_vec:
+            if len(element) < 10:
+                for index in range(len(element), 10):
+                    element.append('')
             counter += 1
             if counter <= 10:
                 greedy.append(element)
@@ -424,6 +427,9 @@ def plot_bc_stats (alpha, cycle=False):
             bc_in = []
             channel_counter = 0
             for edge in channels:
+                if edge == '':
+                    bc_in = bc[-1]
+                    continue
                 graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 channel_counter += 1
@@ -464,6 +470,9 @@ def plot_bc_stats (alpha, cycle=False):
             bc_in = []
             channel_counter = 0
             for edge in channels:
+                if edge == '':
+                    bc_in = bc[-1]
+                    continue
                 graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 channel_counter += 1
@@ -504,6 +513,9 @@ def plot_bc_stats (alpha, cycle=False):
             bc_in = []
             channel_counter = 0
             for edge in channels:
+                if edge == '':
+                    bc_in = bc[-1]
+                    continue
                 graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 channel_counter += 1
@@ -544,6 +556,9 @@ def plot_bc_stats (alpha, cycle=False):
             bc_in = []
             channel_counter = 0
             for edge in channels:
+                if edge == '':
+                    bc_in = bc[-1]
+                    continue
                 graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 channel_counter += 1
@@ -584,6 +599,9 @@ def plot_bc_stats (alpha, cycle=False):
             bc_in = []
             channel_counter = 0
             for edge in channels:
+                if edge == '':
+                    bc_in = bc[-1]
+                    continue
                 graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 channel_counter += 1
@@ -671,6 +689,9 @@ def plot_cc_stats (alpha, cycle=False):
             topology_vec = ws
 
         for element in topology_vec:
+            if len(element) < 10:
+                for index in range(len(element), 10):
+                    element.append('')
             counter += 1
             if counter <= 10:
                 greedy.append(element)
@@ -712,6 +733,9 @@ def plot_cc_stats (alpha, cycle=False):
             cc_in = []
             average_shortest_path = []
             for edge in channels:
+                if edge == '':
+                    cc_in = cc[-1]
+                    continue
                 graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 p = nx.shortest_path_length(graph_copy, source=node, weight='fee')
@@ -754,6 +778,9 @@ def plot_cc_stats (alpha, cycle=False):
             graph_copy = Graph.copy()
             cc_in = []
             for edge in channels:
+                if edge == '':
+                    cc_in = cc[-1]
+                    continue
                 graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 p = nx.shortest_path_length(graph_copy, source=node, weight='fee')
@@ -795,6 +822,9 @@ def plot_cc_stats (alpha, cycle=False):
             graph_copy = Graph.copy()
             cc_in = []
             for edge in channels:
+                if edge == '':
+                    cc_in = cc[-1]
+                    continue
                 graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 p = nx.shortest_path_length(graph_copy, source=node, weight='fee')
@@ -836,6 +866,9 @@ def plot_cc_stats (alpha, cycle=False):
             graph_copy = Graph.copy()
             cc_in = []
             for edge in channels:
+                if edge == '':
+                    cc_in = cc[-1]
+                    continue
                 graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 p = nx.shortest_path_length(graph_copy, source=node, weight='fee')
@@ -877,6 +910,9 @@ def plot_cc_stats (alpha, cycle=False):
             graph_copy = Graph.copy()
             cc_in = []
             for edge in channels:
+                if edge == '':
+                    cc_in = cc[-1]
+                    continue
                 graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 p = nx.shortest_path_length(graph_copy, source=node, weight='fee')
