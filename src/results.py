@@ -40,7 +40,7 @@ def get_success_ratio (Graph: nx.DiGraph, payment_dict: dict, lnd: bool = True, 
             total_payments += 1
     return successful_payments/total_payments
 
-def plot_rewards (alpha):
+def plot_rewards (alpha, cycle= False):
     topologies = ['lightning','barabasi-albert','watts-strogatz']
     algorithms = ['greedy', 'centrality', 'degree', 'rich', 'random']
     
@@ -50,7 +50,7 @@ def plot_rewards (alpha):
 
     for topology in topologies:
         for heuristic in algorithms:
-            fp = open('../results/node_attachment_results/'+heuristic+'_False_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
+            fp = open('../results/node_attachment_results/'+heuristic+'_'+str(cycle)+'_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
             while True:
                 try:
                     (aux, _) = pickle.load(fp)
@@ -70,6 +70,9 @@ def plot_rewards (alpha):
     random = []
     counter = 0
     for element in lightning:
+        if len(element) < 10:
+            for index in range(len(element), 10):
+                element.append(element[-1])
         counter += 1
         if counter <= 10:
             greedy.append(element)
@@ -148,7 +151,7 @@ def plot_rewards (alpha):
 
     plt.tight_layout()
     plt.grid()
-    plt.savefig('../results/node_attachment_results/lightning_False'+str(alpha)+'.pdf', dpi=600)
+    plt.savefig('../results/node_attachment_results/lightning_'+str(cycle)+''+str(alpha)+'.pdf', dpi=600)
     plt.clf()
 
     greedy = []
@@ -158,6 +161,9 @@ def plot_rewards (alpha):
     random = []
     counter = 0
     for element in ba:
+        if len(element) < 10:
+            for index in range(len(element), 10):
+                element.append(element[-1])
         counter += 1
         if counter <= 10:
             greedy.append(element)
@@ -236,7 +242,7 @@ def plot_rewards (alpha):
 
     plt.tight_layout()
     plt.grid()
-    plt.savefig('../results/node_attachment_results/ba_False'+str(alpha)+'.pdf', dpi=600)
+    plt.savefig('../results/node_attachment_results/ba_'+str(cycle)+''+str(alpha)+'.pdf', dpi=600)
     plt.clf()
 
     greedy = []
@@ -246,6 +252,9 @@ def plot_rewards (alpha):
     random = []
     counter = 0
     for element in ws:
+        if len(element) < 10:
+            for index in range(len(element), 10):
+                element.append(element[-1])
         counter += 1
         if counter <= 10:
             greedy.append(element)
@@ -324,9 +333,9 @@ def plot_rewards (alpha):
 
     plt.tight_layout()
     plt.grid()
-    plt.savefig('../results/node_attachment_results/ws_False'+str(alpha)+'.pdf', dpi=600)
+    plt.savefig('../results/node_attachment_results/ws_'+str(cycle)+''+str(alpha)+'.pdf', dpi=600)
 
-def plot_bc_stats (alpha):
+def plot_bc_stats (alpha, cycle=False):
     topologies = ['lightning','barabasi-albert','watts-strogatz']
     algorithms = ['greedy', 'centrality', 'degree', 'rich', 'random']
     lightning = []
@@ -345,7 +354,7 @@ def plot_bc_stats (alpha):
 
     for topology in topologies:
         for heuristic in algorithms:
-            fp = open('../results/node_attachment_results/'+heuristic+'_False_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
+            fp = open('../results/node_attachment_results/'+heuristic+'_'+str(cycle)+'_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
             while True:
                 try:
                     (_, aux) = pickle.load(fp)
@@ -393,8 +402,8 @@ def plot_bc_stats (alpha):
             Graph.add_node(node)
             Graph = make_graph_payment(Graph, 4104693)
 
-        width = 0.2
-        r = np.arange(10)
+        width = 0.3
+        r = np.arange(1)
 
         bc = []
         
@@ -413,10 +422,13 @@ def plot_bc_stats (alpha):
                 Graph.add_node(node)
             graph_copy = Graph.copy()
             bc_in = []
+            channel_counter = 0
             for edge in channels:
                 graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
-                bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
+                channel_counter += 1
+                if channel_counter == 10:
+                    bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
 
             bc.append(bc_in)
         
@@ -426,9 +438,12 @@ def plot_bc_stats (alpha):
         for element in bc:
             bc_mean.append(np.mean(element))
             bc_max.append(1.96*np.std(element)/np.sqrt(10))
-            bc_min.append(1.96*np.std(element)/np.sqrt(10))
+            if np.mean(element) - 1.96*np.std(element)/np.sqrt(10) > 0:
+                bc_min.append(1.96*np.std(element)/np.sqrt(10))
+            else:
+                bc_min.append(np.mean(element))
         bc_err = [bc_min, bc_max]
-        plt.bar(r, bc_mean, yerr=bc_err, label='Greedy', width=width, edgecolor='k')
+        plt.bar(r, bc_mean, yerr=bc_err, label='Greedy', width=width, color='#351431', edgecolor='k')
         
         bc = []
         
@@ -447,10 +462,13 @@ def plot_bc_stats (alpha):
                 Graph.add_node(node)
             graph_copy = Graph.copy()
             bc_in = []
+            channel_counter = 0
             for edge in channels:
                 graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
-                bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
+                channel_counter += 1
+                if channel_counter == 10:
+                    bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
 
             bc.append(bc_in)
         
@@ -460,9 +478,12 @@ def plot_bc_stats (alpha):
         for element in bc:
             bc_mean.append(np.mean(element))
             bc_max.append(1.96*np.std(element)/np.sqrt(10))
-            bc_min.append(1.96*np.std(element)/np.sqrt(10))
+            if np.mean(element) - 1.96*np.std(element)/np.sqrt(10) > 0:
+                bc_min.append(1.96*np.std(element)/np.sqrt(10))
+            else:
+                bc_min.append(np.mean(element))
         bc_err = [bc_min, bc_max]
-        plt.bar(r + width, bc_mean, yerr=bc_err, label='Centrality', width=width, hatch='/', edgecolor='k')
+        plt.bar(r + width, bc_mean, yerr=bc_err, label='Centrality', width=width, color='#775253', edgecolor='k')
 
         bc = []
         
@@ -481,10 +502,13 @@ def plot_bc_stats (alpha):
                 Graph.add_node(node)
             graph_copy = Graph.copy()
             bc_in = []
+            channel_counter = 0
             for edge in channels:
                 graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
-                bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
+                channel_counter += 1
+                if channel_counter == 10:
+                    bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
 
             bc.append(bc_in)
         
@@ -494,9 +518,12 @@ def plot_bc_stats (alpha):
         for element in bc:
             bc_mean.append(np.mean(element))
             bc_max.append(1.96*np.std(element)/np.sqrt(10))
-            bc_min.append(1.96*np.std(element)/np.sqrt(10))
+            if np.mean(element) - 1.96*np.std(element)/np.sqrt(10) > 0:
+                bc_min.append(1.96*np.std(element)/np.sqrt(10))
+            else:
+                bc_min.append(np.mean(element))
         bc_err = [bc_min, bc_max]
-        plt.bar(r + 2*width, bc_mean, yerr=bc_err, label='Degree', width=width, hatch='x', edgecolor='k')
+        plt.bar(r + 2*width, bc_mean, yerr=bc_err, label='Degree', width=width, color='#bdc696',edgecolor='k')
 
         bc = []
         
@@ -515,10 +542,13 @@ def plot_bc_stats (alpha):
                 Graph.add_node(node)
             graph_copy = Graph.copy()
             bc_in = []
+            channel_counter = 0
             for edge in channels:
                 graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
-                bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
+                channel_counter += 1
+                if channel_counter == 10:
+                    bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
 
             bc.append(bc_in)
         
@@ -528,9 +558,12 @@ def plot_bc_stats (alpha):
         for element in bc:
             bc_mean.append(np.mean(element))
             bc_max.append(1.96*np.std(element)/np.sqrt(10))
-            bc_min.append(1.96*np.std(element)/np.sqrt(10))
+            if np.mean(element) - 1.96*np.std(element)/np.sqrt(10) > 0:
+                bc_min.append(1.96*np.std(element)/np.sqrt(10))
+            else:
+                bc_min.append(np.mean(element))
         bc_err = [bc_min, bc_max]
-        plt.bar(r + 3*width, bc_mean, yerr=bc_err, label='Rich', width=width, hatch='.', edgecolor='k')
+        plt.bar(r + 3*width, bc_mean, yerr=bc_err, label='Rich', width=width, color='#d1d3c4',edgecolor='k')
 
         bc = []
         
@@ -549,39 +582,48 @@ def plot_bc_stats (alpha):
                 Graph.add_node(node)
             graph_copy = Graph.copy()
             bc_in = []
+            channel_counter = 0
             for edge in channels:
                 graph_copy.add_edge(node, str(edge), fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
                 graph_copy.add_edge(str(edge), node, fee_base_msat = 100, fee_proportional_millionths = 50, fee = 305)
-                bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
+                channel_counter += 1
+                if channel_counter == 10:
+                    bc_in.append(nx.betweenness_centrality(graph_copy, normalized = True, weight='fee')[node])
 
             bc.append(bc_in)
         
 
         bc = [list(a) for a in (zip(*bc))]
-
+        
         for element in bc:
             bc_mean.append(np.mean(element))
             bc_max.append(1.96*np.std(element)/np.sqrt(10))
-            bc_min.append(1.96*np.std(element)/np.sqrt(10))
+            if np.mean(element) - 1.96*np.std(element)/np.sqrt(10) > 0:
+                bc_min.append(1.96*np.std(element)/np.sqrt(10))
+            else:
+                bc_min.append(np.mean(element))
         bc_err = [bc_min, bc_max]
-        plt.bar(r + 4*width, bc_mean, yerr=bc_err, label='Random', width=width, hatch='+', edgecolor='k')
+        plt.bar(r + 4*width, bc_mean, yerr=bc_err, label='Random', width=width, color='#dfe0dc',edgecolor='k')
 
         plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
-                    mode="expand", borderaxespad=0, ncol=5)
-        plt.xticks(r + 2*width, (1,2,3,4,5,6,7,8,9,10))
-        plt.xlim(0.75,10)
+                    mode="expand", borderaxespad=0, ncol=3, fontsize = 18)
 
-        plt.ylabel('Probability of Collecting Fees',fontsize=16)
-        plt.xlabel('\# of Neighbors',fontsize = 16)
+        plt.ylabel('Probability of Collecting Fees',fontsize=24)
         
-        plt.xticks(fontsize=16)
-        plt.yticks(fontsize=16)
+        plt.tick_params(
+            axis='x',          # changes apply to the x-axis
+            which='both',      # both major and minor ticks are affected
+            bottom=False,      # ticks along the bottom edge are off
+            top=False,         # ticks along the top edge are off
+            labelbottom=False)
+        
+        plt.yticks(fontsize=24)
         plt.tight_layout()
 
-        plt.savefig('../results/node_attachment_results/collect_fee_'+topology+'_alpha_'+str(alpha)+'.pdf', dpi=600)
+        plt.savefig('../results/node_attachment_results/collect_fee_'+topology+str(cycle)+'_alpha_'+str(alpha)+'.pdf', dpi=600)
         plt.clf()
     
-def plot_cc_stats (alpha):
+def plot_cc_stats (alpha, cycle=False):
     topologies = ['lightning', 'barabasi-albert','watts-strogatz']
     algorithms = ['greedy', 'centrality', 'degree', 'rich', 'random']
     lightning = []
@@ -599,7 +641,7 @@ def plot_cc_stats (alpha):
 
     for topology in topologies:
         for heuristic in algorithms:
-            fp = open('../results/node_attachment_results/'+heuristic+'_False_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
+            fp = open('../results/node_attachment_results/'+heuristic+'_'+str(cycle)+'_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
             while True:
                 try:
                     (_, aux) = pickle.load(fp)
@@ -647,8 +689,8 @@ def plot_cc_stats (alpha):
             Graph.add_node(node)
             Graph = make_graph_payment(Graph, 4104693)
 
-        width = 0.2
-        r = np.arange(10)
+        width = 0.3
+        r = np.arange(1)
 
         cc = []
         
@@ -681,12 +723,18 @@ def plot_cc_stats (alpha):
 
         cc = [list(a) for a in (zip(*cc))]
 
+        counter = 0
         for element in cc:
-            cc_mean.append(np.mean(element))
-            cc_max.append(1.96*np.std(element)/np.sqrt(10))
-            cc_min.append(1.96*np.std(element)/np.sqrt(10))
+            counter += 1
+            if counter == 10:
+                cc_mean.append(np.mean(element))
+                cc_max.append(1.96*np.std(element)/np.sqrt(10))
+                if np.mean(element) - 1.96*np.std(element)/np.sqrt(10) > 0:
+                    cc_min.append(1.96*np.std(element)/np.sqrt(10))
+                else:
+                    cc_min.append(np.mean(element))
         cc_err = [cc_min, cc_max]
-        plt.bar(r, cc_mean, yerr=cc_err, label='Greedy', width=width, edgecolor='k')
+        plt.bar(r, cc_mean, yerr=cc_err, label='Greedy', width=width, color = '#545454',edgecolor='k')
 
         cc = []
         
@@ -716,12 +764,18 @@ def plot_cc_stats (alpha):
 
         cc = [list(a) for a in (zip(*cc))]
 
+        counter = 0
         for element in cc:
-            cc_mean.append(np.mean(element))
-            cc_max.append(1.96*np.std(element)/np.sqrt(10))
-            cc_min.append(1.96*np.std(element)/np.sqrt(10))
+            counter += 1
+            if counter == 10:
+                cc_mean.append(np.mean(element))
+                cc_max.append(1.96*np.std(element)/np.sqrt(10))
+                if np.mean(element) - 1.96*np.std(element)/np.sqrt(10) > 0:
+                    cc_min.append(1.96*np.std(element)/np.sqrt(10))
+                else:
+                    cc_min.append(np.mean(element))
         cc_err = [cc_min, cc_max]
-        plt.bar(r + width, cc_mean, yerr=cc_err, label='Centrality', width=width, hatch='/', edgecolor='k')
+        plt.bar(r + width, cc_mean, yerr=cc_err, label='Centrality', width=width, color='#69747c',edgecolor='k')
 
         cc = []
         
@@ -751,12 +805,18 @@ def plot_cc_stats (alpha):
 
         cc = [list(a) for a in (zip(*cc))]
 
+        counter = 0
         for element in cc:
-            cc_mean.append(np.mean(element))
-            cc_max.append(1.96*np.std(element)/np.sqrt(10))
-            cc_min.append(1.96*np.std(element)/np.sqrt(10))
+            counter += 1
+            if counter == 10:
+                cc_mean.append(np.mean(element))
+                cc_max.append(1.96*np.std(element)/np.sqrt(10))
+                if np.mean(element) - 1.96*np.std(element)/np.sqrt(10) > 0:
+                    cc_min.append(1.96*np.std(element)/np.sqrt(10))
+                else:
+                    cc_min.append(np.mean(element))
         cc_err = [cc_min, cc_max]
-        plt.bar(r + 2*width, cc_mean, yerr=cc_err, label='Degree', width=width, hatch='x', edgecolor='k')
+        plt.bar(r + 2*width, cc_mean, yerr=cc_err, label='Degree', width=width, color='#6baa75',edgecolor='k')
 
         cc = []
         
@@ -786,12 +846,18 @@ def plot_cc_stats (alpha):
 
         cc = [list(a) for a in (zip(*cc))]
 
+        counter = 0
         for element in cc:
-            cc_mean.append(np.mean(element))
-            cc_max.append(1.96*np.std(element)/np.sqrt(10))
-            cc_min.append(1.96*np.std(element)/np.sqrt(10))
+            counter += 1
+            if counter == 10:
+                cc_mean.append(np.mean(element))
+                cc_max.append(1.96*np.std(element)/np.sqrt(10))
+                if np.mean(element) - 1.96*np.std(element)/np.sqrt(10) > 0:
+                    cc_min.append(1.96*np.std(element)/np.sqrt(10))
+                else:
+                    cc_min.append(np.mean(element))
         cc_err = [cc_min, cc_max]
-        plt.bar(r + 3*width, cc_mean, yerr=cc_err, label='Rich', width=width, hatch='.', edgecolor='k')
+        plt.bar(r + 3*width, cc_mean, yerr=cc_err, label='Rich', width=width, color='#84dd63',edgecolor='k')
 
         cc = []
         
@@ -821,23 +887,34 @@ def plot_cc_stats (alpha):
 
         cc = [list(a) for a in (zip(*cc))]
 
+        counter = 0
         for element in cc:
-            cc_mean.append(np.mean(element))
-            cc_max.append(1.96*np.std(element)/np.sqrt(10))
-            cc_min.append(1.96*np.std(element)/np.sqrt(10))
+            counter += 1
+            if counter == 10:
+                cc_mean.append(np.mean(element))
+                cc_max.append(1.96*np.std(element)/np.sqrt(10))
+                if np.mean(element) - 1.96*np.std(element)/np.sqrt(10) > 0:
+                    cc_min.append(1.96*np.std(element)/np.sqrt(10))
+                else:
+                    cc_min.append(np.mean(element))
         cc_err = [cc_min, cc_max]
-        plt.bar(r + 4*width, cc_mean, yerr=cc_err, label='Random', width=width, hatch='+', edgecolor='k')
+        plt.bar(r + 4*width, cc_mean, yerr=cc_err, label='Random', width=width, color='#cbff4d',edgecolor='k')
 
         plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
-                    mode="expand", borderaxespad=0, ncol=5)
-        plt.xticks(r + 2*width, (1,2,3,4,5,6,7,8,9,10))
+                    mode="expand", borderaxespad=0, ncol=3, fontsize = 18)
 
-        plt.ylabel('Average of Paying Fees (satoshis)',fontsize=16)
-        plt.xlabel('\# of Neighbors',fontsize = 16)
+        plt.ylabel('Average Paid Fee (satoshis)',fontsize=24)
+        plt.tick_params(
+            axis='x',          # changes apply to the x-axis
+            which='both',      # both major and minor ticks are affected
+            bottom=False,      # ticks along the bottom edge are off
+            top=False,         # ticks along the top edge are off
+            labelbottom=False)
         
-        plt.xticks(fontsize=16)
-        plt.yticks(fontsize=16)
+        plt.yticks(fontsize=24)
         plt.tight_layout()
+        if topology == 'watts-strogatz':
+            plt.yscale('log')
         
-        plt.savefig('../results/node_attachment_results/paid_fee_'+topology+'_alpha_'+str(alpha)+'.pdf', dpi=600)
+        plt.savefig('../results/node_attachment_results/paid_fee_'+topology+str(cycle)+'_alpha_'+str(alpha)+'.pdf', dpi=600)
         plt.clf()
