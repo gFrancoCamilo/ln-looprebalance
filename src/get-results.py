@@ -180,6 +180,96 @@ def node_attachment (topology, nodes, k, p, m, date, channels, alpha, cycle):
         degree_fp.close()
         rich_fp.close()
 
+@cli.command(name='attachment-multiple-nodes', help='Gets node attachment results')
+@click.option('-t','--topology', default='lightning',
+             type=click.Choice (['watts-strogatz','barabasi-albert', 'lightning'], case_sensitive=False),
+             help = 'Graph topology used in the simulation')
+@click.option('-s','--snowball_size', type=int, default=512, help='Number of nodes in the topology be it snowball sampled or synthetic topology created.')
+@click.option('-k', default=2, help='K parameter for Watts-Strogatz graph. Only used with Watts-Strogatz topology.')
+@click.option('-p', default=0.1, help='P parameter for Watts-Strogatz graph. Only used with Watts-Strogatz topology.')
+@click.option('-m', type=int,default=2, help='M parameter for Barabasi-Albert graph. Only used with Watts-Strogatz topology.')
+@click.option('-d', '--date', default='jul 2022', type=click.Choice(['jul 2021', 'jan 2022', 'jul 2022'], case_sensitive=False),
+            help='Date of lighting snapshot to be used in the simulation. Only used with lightning topology.')
+@click.option('-c','--channels', type=int, default = 3, help='Number of channels to create.')
+@click.option('-a', '--alpha', type=float, default = 0.5, help='Alpha parameter for reward computation.')
+@click.option('--cycle', is_flag=True, default=True, help='Greedy attachment strategy focuses on cycle creation.')
+@click.option('-n', '--nodes', default = 5, type = int, help='Number of nodes to add to the topology')
+def attachment_multiple_nodes (topology, snowball_sizes, k, p, m, date, channels, alpha, cycle, nodes):
+    if topology == 'lightning':
+        print('Generating Lightning Graph...')
+        Graph = graph_names(date)
+        print('Snowball sampling Lightning Graph...')
+        Graph = snowball_sample(Graph, size = snowball_sizes)
+    elif topology == 'watts-strogatz':
+        print('Generating Watts-Strogatz Graph...')
+        Graph = generate_graph(snowball_sizes, k=k, p=p, option='watts-strogatz') 
+        print('Setting attributes...')   
+        Graph = set_attributes(Graph, 'lightning')
+    elif topology == 'barabasi-albert':
+        print('Generating Barabasi-Albert Graph...')
+        Graph = generate_graph(snowball_sizes, m=m, option='barabasi-albert') 
+        print('Setting attributes...')
+        Graph = set_attributes(Graph, 'lightning')
+    
+    Graph = validate_graph(Graph)
+    if topology != 'lightning':
+        nx.write_gml(Graph, '../results/node_attachment_results/multiple_nodes/graphs/'+topology+str(uuid.uuid4())+'_'+str(cycle)+'_alpha_'+str(alpha)+'.gml')
+
+    print('Adding new node to topology using the greedy algorithm')
+
+    greedy_fp = open('../results/node_attachment_results/multiple_nodes/greedy_' + str(cycle) + '_' + topology + '_alpha_'+str(alpha)+'.dat', 'ab+')
+    random_fp = open('../results/node_attachment_results/multiple_nodes/random_' + str(cycle) + '_' + topology + '_alpha_'+str(alpha)+'.dat', 'ab+')
+    centrality_fp = open('../results/node_attachment_results/multiple_nodes/centrality_' + str(cycle) + '_' + topology + '_alpha_'+str(alpha)+'.dat', 'ab+')
+    degree_fp = open('../results/node_attachment_results/multiple_nodes/degree_' + str(cycle) + '_' + topology + '_alpha_'+str(alpha)+'.dat', 'ab+')
+    rich_fp = open('../results/node_attachment_results/multiple_nodes/rich_' + str(cycle) + '_' + topology + '_alpha_'+str(alpha)+'.dat', 'ab+')
+
+    greedy_copy = Graph.copy()
+    random_copy = Graph.copy()
+    centrality_copy = Graph.copy()
+    degree_copy = Graph.copy()
+    rich_copy = Graph.copy()
+
+    for node in range(nodes):
+        selected_node_greedy, greedy_reward = greedy_algorithm(greedy_copy, node, channels, alpha, cycle)
+        pickle.dump((greedy_reward,list(selected_node_greedy)), greedy_fp)
+
+        print('Adding new nodes to topology using uniform distribution...')
+        pdf = get_uniform_distribution_pdf(Graph)
+        selected_node_random = sample_pdf(pdf, channels)
+        random_reward, _ = add_selected_edges(random_copy, selected_node_random, node, alpha)
+        pickle.dump((random_reward,list(selected_node_random)), random_fp)
+
+        print('Adding new nodes to topology using centrality distribution...')
+        pdf = get_centrality_distribution_pdf(Graph)
+        selected_node_centrality = sample_pdf(pdf, channels)
+        centrality_reward, _ = add_selected_edges(centrality_copy, selected_node_centrality, node, alpha)
+        pickle.dump((centrality_reward,list(selected_node_centrality)), centrality_fp)
+
+        print('Adding new nodes to topology using degree distribution...')
+        pdf = get_degree_distribution_pdf(Graph)
+        selected_node_degree = sample_pdf(pdf, channels)
+        degree_reward, _ = add_selected_edges(degree_copy, selected_node_degree, node, alpha)
+        pickle.dump((degree_reward,list(selected_node_degree)), degree_fp)
+
+        print('Adding new nodes to topology using richest nodes distribution...')
+        pdf = get_rich_nodes_pdf(Graph)
+        selected_node_rich = sample_pdf(pdf, channels)
+        rich_reward, _ = add_selected_edges(rich_copy, selected_node_rich, node, alpha)
+        pickle.dump((rich_reward,list(selected_node_rich)), rich_fp)
+
+            
+    greedy_fp.close()
+    random_fp.close()
+    centrality_fp.close()
+    degree_fp.close()
+    rich_fp.close()
+    
+    print('Number of node in greedy graph: ' + str(greedy_copy.number_of_nodes()))
+    print('Number of node in random graph: ' + str(random_copy.number_of_nodes()))
+    print('Number of node in centrality graph: ' + str(centrality_copy.number_of_nodes()))
+    print('Number of node in degree graph: ' + str(degree_copy.number_of_nodes()))
+    print('Number of node in rich graph: ' + str(rich_copy.number_of_nodes()))
+
     
     
 
