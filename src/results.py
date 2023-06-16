@@ -335,6 +335,107 @@ def plot_rewards (alpha, cycle= False):
     plt.grid()
     plt.savefig('../results/node_attachment_results/ws_'+str(cycle)+''+str(alpha)+'.pdf', dpi=600)
 
+def compare_rewards_cycle (alpha=0.5):
+    topologies = ['lightning','barabasi-albert','watts-strogatz']
+    
+    lightning = []
+    ba = []
+    ws = []
+    lightning_True = []
+    ba_True = []
+    ws_True = []
+
+    for topology in topologies:
+        fp = open('../results/node_attachment_results/greedy_False_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
+        while True:
+            try:
+                (aux, _) = pickle.load(fp)
+                if topology == 'lightning':
+                    lightning.append(aux)
+                if topology == 'barabasi-albert':
+                    ba.append(aux)
+                if topology == 'watts-strogatz':
+                    ws.append(aux)
+            except EOFError:
+                break
+        fp = open('../results/node_attachment_results/greedy_True_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
+        while True:
+            try:
+                (aux, _) = pickle.load(fp)
+                if topology == 'lightning':
+                    lightning_True.append(aux)
+                if topology == 'barabasi-albert':
+                    ba_True.append(aux)
+                if topology == 'watts-strogatz':
+                    ws_True.append(aux)
+            except EOFError:
+                break
+
+
+    for topology in topologies:
+        greedy = []
+        greedy_True = []
+        
+        if topology == 'lightning':
+            greedy = lightning
+            greedy_True = lightning_True
+        elif topology == 'barabasi-albert':
+            greedy = ba
+            greedy_True = ba_True
+        else:
+            greedy = ws
+            greedy_True = ws_True
+        x = [number for number in range(1,11)]
+        
+        for element in greedy:
+            if len(element) < 10:
+                for index in range(len(element), 10):
+                    element.append(element[-1])
+        greedy = [list(a) for a in (zip(*greedy))]
+
+        greedy_max = []
+        greedy_min = []
+        greedy_mean = []
+        for element in greedy:
+            greedy_mean.append(np.mean(element))
+            greedy_max.append(1.96*np.std(element)/np.sqrt(10))
+            greedy_min.append(1.96*np.std(element)/np.sqrt(10))
+        
+        greedy_err = [greedy_min, greedy_max]
+        plt.errorbar(x, greedy_mean, yerr=greedy_err, label='No Cycle', lw=2)
+        
+        for element in greedy_True:
+            if len(element) < 10:
+                for index in range(len(element), 10):
+                    element.append(element[-1])
+        
+        greedy_True = [list(a) for a in (zip(*greedy_True))]
+
+        greedy_True_max = []
+        greedy_True_min = []
+        greedy_True_mean = []
+        for element in greedy_True:
+            greedy_True_mean.append(np.mean(element))
+            greedy_True_max.append(1.96*np.std(element)/np.sqrt(10))
+            greedy_True_min.append(1.96*np.std(element)/np.sqrt(10))
+    
+        greedy_True_err = [greedy_True_min, greedy_True_max]
+        
+        plt.errorbar(x, greedy_True_mean, yerr=greedy_True_err, label='Cycle', ls='dashed', lw=2)
+        plt.legend(fontsize = 16)
+        plt.ylabel('Incentive', fontsize=24)
+        plt.xlabel('\# of Neighbors', fontsize = 24)
+        
+        plt.xticks(fontsize = 24)
+        plt.yticks(fontsize = 24)
+        
+        plt.tight_layout()
+        plt.grid()
+        plt.savefig('../results/node_attachment_results/compare_cycles_'+str(topology)+str(alpha)+'.pdf', dpi=600)
+        plt.clf()
+
+
+
 def plot_bc_stats (alpha, cycle=False):
     topologies = ['lightning','barabasi-albert','watts-strogatz']
     algorithms = ['greedy', 'centrality', 'degree', 'rich', 'random']
@@ -348,13 +449,21 @@ def plot_bc_stats (alpha, cycle=False):
     
     graph_files = []
     for graph_file in graph_files_all:
-        if graph_file.endswith(str(alpha)+'.gml') and graph_file.startswith('lightning')==False:
+        if graph_file.endswith(str(cycle)+'_alpha_'+str(alpha)+'.gml') and graph_file.startswith('lightning')==False:
             graph_files.append(graph_file)
 
+    graph_files = graph_files[:20]
 
     for topology in topologies:
         for heuristic in algorithms:
-            fp = open('../results/node_attachment_results/'+heuristic+'_'+str(cycle)+'_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
+            if topology != 'lightning':
+                fp = open('../results/node_attachment_results/'+heuristic+'_'+str(cycle)+'_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
+            else:
+                if heuristic == 'greedy':
+                    fp = open('../results/node_attachment_results/'+heuristic+'_'+str(cycle)+'_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
+                else:
+                    fp = open('../results/node_attachment_results/'+heuristic+'_False_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
+
             while True:
                 try:
                     (_, aux) = pickle.load(fp)
@@ -387,16 +496,29 @@ def plot_bc_stats (alpha, cycle=False):
                 for index in range(len(element), 10):
                     element.append('')
             counter += 1
-            if counter <= 10:
-                greedy.append(element)
-            elif counter <= 20:
-                centrality.append(element)
-            elif counter <= 30:
-                degree.append(element)
-            elif counter <= 40:
-                rich.append(element)
-            elif counter <= 50:
-                random.append(element)
+            if topology == 'lightning' and cycle == True: 
+                if counter <= 1:
+                    greedy.append(element)
+                    print(greedy)
+                elif counter <= 11:
+                    centrality.append(element)
+                elif counter <= 21:
+                    degree.append(element)
+                elif counter <= 31:
+                    rich.append(element)
+                elif counter <= 41:
+                    random.append(element)
+            else:
+                if counter <= 10:
+                    greedy.append(element)
+                elif counter <= 20:
+                    centrality.append(element)
+                elif counter <= 30:
+                    degree.append(element)
+                elif counter <= 40:
+                    rich.append(element)
+                elif counter <= 50:
+                    random.append(element)
         
         if topology == 'lightning':
             Graph = graph_names('jul 2022')
@@ -654,12 +776,21 @@ def plot_cc_stats (alpha, cycle=False):
 
     graph_files = []
     for graph_file in graph_files_all:
-        if graph_file.endswith(str(alpha)+'.gml') and graph_file.startswith('lightning')==False:
+        if graph_file.endswith(str(cycle)+'_alpha_'+str(alpha)+'.gml') and graph_file.startswith('lightning')==False:
             graph_files.append(graph_file)
 
+    graph_files = graph_files[:20]
+    
     for topology in topologies:
         for heuristic in algorithms:
-            fp = open('../results/node_attachment_results/'+heuristic+'_'+str(cycle)+'_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
+            if topology != 'lightning':
+                fp = open('../results/node_attachment_results/'+heuristic+'_'+str(cycle)+'_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
+            else:
+                if heuristic == 'greedy':
+                    fp = open('../results/node_attachment_results/'+heuristic+'_'+str(cycle)+'_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
+                else:
+                    fp = open('../results/node_attachment_results/'+heuristic+'_False_'+topology+'_alpha_'+str(alpha)+'.dat','rb')
+
             while True:
                 try:
                     (_, aux) = pickle.load(fp)
@@ -693,16 +824,28 @@ def plot_cc_stats (alpha, cycle=False):
                 for index in range(len(element), 10):
                     element.append('')
             counter += 1
-            if counter <= 10:
-                greedy.append(element)
-            elif counter <= 20:
-                centrality.append(element)
-            elif counter <= 30:
-                degree.append(element)
-            elif counter <= 40:
-                rich.append(element)
-            elif counter <= 50:
-                random.append(element)
+            if topology == 'lightning' and cycle == 'True': 
+                if counter <= 1:
+                    greedy.append(element)
+                elif counter <= 11:
+                    centrality.append(element)
+                elif counter <= 21:
+                    degree.append(element)
+                elif counter <= 31:
+                    rich.append(element)
+                elif counter <= 41:
+                    random.append(element)
+            else:
+                if counter <= 10:
+                    greedy.append(element)
+                elif counter <= 20:
+                    centrality.append(element)
+                elif counter <= 30:
+                    degree.append(element)
+                elif counter <= 40:
+                    rich.append(element)
+                elif counter <= 50:
+                    random.append(element)
         if topology == 'lightning':
             Graph = graph_names('jul 2022')
             Graph = validate_graph(Graph)
