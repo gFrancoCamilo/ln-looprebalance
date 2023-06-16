@@ -44,7 +44,7 @@ def greedy_algorithm (Graph, node_improve, channels, alpha = 0.5, cycle = True):
                 if cycle == True:
                     if len(selected_node) != 0:
                         for node1 in selected_node:
-                            if Graph.has_path(node,node1) == True or Graph.has_path(node1, node) == True:
+                            if Graph.has_edge(node,node1) == True or Graph.has_edge(node1, node) == True:
                                 max_reward = new_reward
                                 max_node = node
                     else:
@@ -71,7 +71,7 @@ def calculate_reward (Graph: nx.DiGraph, node, alpha):
     for (i,j) in payment_graph.edges():
         if type(payment_graph[i][j]['fee']) is str:
             payment_graph[i][j]['fee'] = int(payment_graph[i][j]['fee'])
-    new_cc = nx.closeness_centrality(payment_graph, u=node, distance='fee')
+    new_cc = nx.closeness_centrality(payment_graph.reverse(), u=node, distance='fee')
     new_bc = nx.betweenness_centrality(payment_graph, normalized = True, weight='fee')
     return (alpha*new_bc[node] + (1-alpha)*new_cc)
 
@@ -177,61 +177,3 @@ def get_rich_nodes_pdf (Graph: nx.DiGraph, skew = False, smooth = False):
 
     rich_nodes = {k:v/network_capacity for k, v in rich_nodes.items()}
     return manipulate_pdf(rich_nodes, skew, smooth)
-
-
-
-def degree_only (Graph, node_improve, channels, parameter, alpha = 0.5, beta = 0.5, cycle = True):
-    if node_improve not in Graph.nodes:
-        Graph.add_node(node_improve)
-
-    increment_shortest_path(Graph)
-    
-    new_edges = []
-    selected_node = []
-    cc_after = []
-
-    if parameter == 'degree':
-        centralized = get_k_most_centralized_nodes(Graph, 400)
-    if parameter == 'bc':
-        centralized = get_k_most_centralized_nodes_bc(Graph, 400)
-    if parameter == 'cc':
-        centralized = get_k_most_centralized_nodes_cc(Graph, 400)
-    count = 1
-    reward = 0
-    while(len(new_edges) < channels):
-        node = centralized[-count]
-        count += 1
-        if node == node_improve:
-            continue
-        if Graph.has_edge(node_improve, node) == True:
-            continue
-          
-        
-        Graph.add_edge(node_improve, node, fee_base_msat = 1001)
-        new_cc = nx.closeness_centrality(Graph, u=node_improve,distance="fee_base_msat")
-        new_bc = edges_betweenness_centrality(Graph, 25)
-        
-        if (node_improve, node) not in new_bc:
-            reward = (alpha*new_bc[(node, node_improve)] + beta*new_cc)/2
-        else:
-            reward = (alpha*new_bc[(node_improve, node)] + beta*new_cc)/2
-
-        if cycle == True:
-            if len(selected_node) != 0:
-                for node1 in selected_node:
-                    if Graph.has_edge(node,node1) == True or Graph.has_edge(node1, node) == True:
-                        cc_after.append(reward)
-                        selected_node.append(node)
-                        new_edges.append((node,node_improve))
-                    else:
-                        Graph.remove_edge(node_improve, node)
-            else:
-                cc_after.append(reward)
-                selected_node.append(node)
-                new_edges.append((node,node_improve))
-        else: 
-            cc_after.append(reward)
-            selected_node.append(node)
-            new_edges.append((node,node_improve))
-        
-    return selected_node, cc_after
