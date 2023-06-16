@@ -190,20 +190,20 @@ def node_attachment (topology, nodes, k, p, m, date, channels, alpha, cycle):
 @click.option('-a', '--alpha', type=float, default = 0.5, help='Alpha parameter for reward computation.')
 @click.option('--cycle', is_flag=True, default=True, help='Greedy attachment strategy focuses on cycle creation.')
 @click.option('-n', '--nodes', default = 5, type = int, help='Number of nodes to add to the topology')
-def attachment_multiple_nodes (topology, snowball_sizes, k, p, m, date, channels, alpha, cycle, nodes):
+def attachment_multiple_nodes (topology, snowball_size, k, p, m, date, channels, alpha, cycle, nodes):
     if topology == 'lightning':
         print('Generating Lightning Graph...')
         Graph = graph_names(date)
         print('Snowball sampling Lightning Graph...')
-        Graph = snowball_sample(Graph, size = snowball_sizes)
+        Graph = snowball_sample(Graph, size = snowball_size)
     elif topology == 'watts-strogatz':
         print('Generating Watts-Strogatz Graph...')
-        Graph = generate_graph(snowball_sizes, k=k, p=p, option='watts-strogatz') 
+        Graph = generate_graph(snowball_size, k=k, p=p, option='watts-strogatz') 
         print('Setting attributes...')   
         Graph = set_attributes(Graph, 'lightning')
     elif topology == 'barabasi-albert':
         print('Generating Barabasi-Albert Graph...')
-        Graph = generate_graph(snowball_sizes, m=m, option='barabasi-albert') 
+        Graph = generate_graph(snowball_size, m=m, option='barabasi-albert') 
         print('Setting attributes...')
         Graph = set_attributes(Graph, 'lightning')
     
