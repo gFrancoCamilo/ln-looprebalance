@@ -53,15 +53,21 @@ def graph_names (option: str = 'jul 2022'):
     attributes already present. Furthermore, the function returns the highest connected
     component of the graph.
     """
-    filenames = ['../ln-snapshots/ln-topology-20210701-recovered-capacitated.gml',
+    filenames = ['../ln-snapshots/ln-topology-20200701-recovered-capacitated.gml',
+                '../ln-snapshots/ln-topology-20210101-recovered-capacitated.gml',
+                '../ln-snapshots/ln-topology-20210701-recovered-capacitated.gml',
                 '../ln-snapshots/ln-topology-20220101-recovered-capacitated.gml',
                 '../ln-snapshots/ln-topology-20220701-recovered-capacitated.gml']
-    if option == "jul 2021":
+    if option == "jul 2020":
         Graph = create_graph(filenames[0], 'gml')
-    if option == "jan 2022":
+    if option == "jan 2021":
         Graph = create_graph(filenames[1], 'gml')
-    if option == "jul 2022":
+    if option == "jul 2021":
         Graph = create_graph(filenames[2], 'gml')
+    if option == "jan 2022":
+        Graph = create_graph(filenames[3], 'gml')
+    if option == "jul 2022":
+        Graph = create_graph(filenames[4], 'gml')
 
     """Removing small graph-components"""
     graph_components = sorted(nx.strongly_connected_components(Graph), key=len, reverse=True)
