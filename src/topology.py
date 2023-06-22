@@ -13,7 +13,7 @@ def generate_graph (n = None, alpha = None, beta = None, gamma = None, k = None,
     behaves both as small-world and scale-free network.
     """
     if option == 'watts-strogatz':
-        Graph = nx.watts_strogatz_graph(n, k, p)
+        Graph = nx.connected_watts_strogatz_graph(n, k, p)
     elif option == 'barabasi-albert':
         Graph = nx.barabasi_albert_graph(n, m)
     else:
