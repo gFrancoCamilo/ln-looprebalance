@@ -1,15 +1,176 @@
 import pandas as pd
+import matplotlib as mpl
+mpl.rcParams['text.usetex'] = True
+mpl.rcParams['text.latex.preamble'] = r'\usepackage{libertine}'
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy import stats
+from statsmodels.tsa.stattools import acf
+from statsmodels.graphics.tsaplots import plot_acf
+
 import random
 import statistics
 import os
 import pickle
+import warnings
+warnings.filterwarnings('ignore')
+
 from scipy.fft import fft
 from topology import *
 from pcn import *
 from cycle_finder import *
 from tqdm import tqdm
+
+import lightning.pytorch as pl
+from lightning.pytorch.callbacks import EarlyStopping, LearningRateMonitor
+from lightning.pytorch.loggers import TensorBoardLogger
+from lightning.pytorch.tuner import Tuner
+
+#import tensorflow as tf
+import tensorboard as tb
+
+import numpy as np
+import pandas as pd
+import torch
+
+from pytorch_forecasting import Baseline, TemporalFusionTransformer, TimeSeriesDataSet
+from pytorch_forecasting.data import GroupNormalizer, NaNLabelEncoder
+from pytorch_forecasting.metrics import MAE, SMAPE, PoissonLoss, QuantileLoss
+from pytorch_forecasting.models.temporal_fusion_transformer.tuning import optimize_hyperparameters
+
+plt.style.use('seaborn-v0_8-colorblind')
+
+def visualize_time_series ():
+    df = pd.read_csv('../datasets/transactions-in-USD-jan-2013-aug-2016.txt')
+
+    df = df.loc[df['USD_amount'] < 10**(8)].reset_index()
+    df = df.loc[df['USD_amount'] > 0].reset_index()
+    df = df[(np.abs(stats.zscore(df['USD_amount'])) < 3)]
+    df = df.sort_values(by=['unix_timestamp'], ascending=True).reset_index(drop=True)
+
+    plt.plot(df['unix_timestamp'], df['USD_amount'])
+    plt.xticks(fontsize=18)
+    plt.yticks(fontsize=18)
+    plt.ylabel('Transaction Amount (\$)', fontsize = 20)
+    plt.xlabel('Unix Time', fontsize = 20)
+    ax = plt.gca()
+    ax.yaxis.get_offset_text().set_fontsize(18)
+    ax.xaxis.get_offset_text().set_fontsize(18)
+    plt.tight_layout()
+    plt.savefig('../results/rebalancing-results/time-series.pdf', dpi=600)
+    plt.clf()
+
+    plot_acf(df['USD_amount'].tolist(), lags=50)
+    plt.xticks(fontsize=18)
+    plt.yticks(fontsize=18)
+    plt.ylabel('Autocorrelation', fontsize=20)
+    plt.xlabel('Lag', fontsize=20)
+    plt.tight_layout()
+    plt.savefig('../results/rebalancing-results/autocorrelation.pdf',dpi=600)
+
+def forecast_time_series_test ():
+    print('Loading dataset...')
+    df = pd.read_csv('../datasets/transactions-in-USD-jan-2013-aug-2016.txt')
+
+    df = df.loc[df['USD_amount'] < 10**(8)].reset_index()
+    df = df.loc[df['USD_amount'] > 0].reset_index()
+    df = df[(np.abs(stats.zscore(df['USD_amount'])) < 3)]
+    df['unix_timestamp'] = pd.to_datetime(df['unix_timestamp'], unit='s')
+    df = df.loc[df['unix_timestamp'].dt.year >= 2016]
+    df = df.loc[df['unix_timestamp'].dt.month > 5]
+    df = df.sort_values(by=['unix_timestamp'], ascending=True).reset_index(drop=True)
+    
+    """As we want to predict transactions for the next day, we create a time index based on the day"""
+    df['time_idx'] = df['unix_timestamp'].dt.year*365 + df['unix_timestamp'].dt.month*30 + df['unix_timestamp'].dt.day
+    df['time_idx'] -= df['time_idx'].min()
+
+    df['day'] = df.unix_timestamp.dt.day.astype(str).astype('category')
+
+    max_prediction_length = 2
+    max_encoder_length = 14
+    training_cutoff = df['time_idx'].max() - max_prediction_length
+    
+    print('Creating training set...')
+
+    training = TimeSeriesDataSet(
+            df[lambda x: x.time_idx <= training_cutoff],
+            time_idx='time_idx',
+            target='USD_amount',
+            group_ids = ['sdr','rcv'],
+            min_encoder_length = max_encoder_length // 2,
+            max_encoder_length = max_encoder_length,
+            static_categoricals = [],
+            min_prediction_length = 1,
+            max_prediction_length = max_prediction_length,
+            time_varying_known_categoricals = ['day'],
+            time_varying_known_reals = ['time_idx'],
+            time_varying_unknown_categoricals = [],
+            time_varying_unknown_reals = [
+                'USD_amount',
+            ],
+            target_normalizer = None,
+            add_relative_time_idx = True,
+            add_target_scales = True,
+            add_encoder_length = True,
+            allow_missing_timesteps = True,
+        )
+    
+    """Creating validation set to predict the last max_prediction_length days of the dataset"""
+    validation = TimeSeriesDataSet.from_dataset(training, df, predict=True, stop_randomization=True)
+
+    """Create dataloaders"""
+    print('Creating daloaders...')
+    batch_size = 32
+    train_dataloader = training.to_dataloader(train=True, batch_size=batch_size, num_workers=5)
+    val_dataloader = validation.to_dataloader(train=False, batch_size=batch_size, num_workers=5)
+
+    #baseline_predictions = Baseline().predict(val_dataloader, return_y=True)
+    #MAE()(baseline_predictions.output, baseline_predictions.y)
+
+    pl.seed_everything(42)
+    
+    print('Training the TFT model...')
+    early_stop_callback = EarlyStopping(monitor='val_loss', min_delta=1e-4, patience = 10, verbose = False, mode='min')
+    lr_logger = LearningRateMonitor()
+    logger = TensorBoardLogger('lightning_logs')
+
+    trainer = pl.Trainer(
+            max_epochs = 50,
+            accelerator = 'cpu',
+            enable_model_summary = True,
+            gradient_clip_val = 0.1,
+            limit_train_batches = 50,
+            callbacks=[lr_logger, early_stop_callback],
+            logger=logger,
+    )
+
+    tft = TemporalFusionTransformer.from_dataset(
+            training,
+            learning_rate = 0.03,
+            hidden_size = 2,
+            attention_head_size = 2,
+            dropout = 0.2,
+            hidden_continuous_size = 2,
+            loss = QuantileLoss(),
+            log_interval = 0,
+            optimizer = 'Ranger',
+            reduce_on_plateau_patience = 4,
+    )
+    print(f"Number of parameters in network: {tft.size()/1e3:.1f}k")
+
+    trainer.fit(
+            tft,
+            train_dataloaders=train_dataloader,
+            val_dataloaders=val_dataloader,
+    )
+
+    best_model_path = trainer.checkpoint_callback.best_model_path
+    best_tft = TemporalFusionTransformer.load_from_checkpoint(best_model_path)
+
+    predictions = best_tft.predict(val_dataloader, return_y=True, trainer_kwargs=dict(accelerator='cpu'))
+    MAE()(predictions.output, predictions.y)
+
+forecast_time_series_test ()
 
 def check_ripple_seasonality ():
     df = pd.read_csv('../datasets/transactions-in-USD-jan-2013-aug-2016.txt')
@@ -175,6 +336,9 @@ def check_ripple_node_seasonality ():
     plt.tight_layout()
     plt.savefig('../results/fft_week_node.pdf', dpi=600)
 
+###########################################################################################################################
+#               Node attachment tests below
+##########################################################################################################################
 def degree_distribution(Graph: nx.DiGraph):
     degrees = [Graph.degree(node) for node in Graph.nodes()]
     fig = plt.figure()
@@ -386,7 +550,7 @@ def check_fees_change ():
             graph_copy[neighbor][node].update(attr_ji)
 
 
-check_fees_change()
+#check_fees_change()
 #plt.style.use('seaborn-v0_8-colorblind')
 #Graph = graph_names('jul 2022')
 #Graph = validate_graph(Graph)
