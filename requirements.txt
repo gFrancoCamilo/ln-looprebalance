@@ -4,3 +4,8 @@ networkx
 numpy
 tqdm
 matplotlib
+statsmodels
+pytorch-forecasting
+tensorboard
+pytorch-lightning
+spacy
