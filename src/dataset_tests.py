@@ -39,6 +39,17 @@ from pytorch_forecasting.metrics import MAE, SMAPE, PoissonLoss, QuantileLoss
 from pytorch_forecasting.models.temporal_fusion_transformer.tuning import optimize_hyperparameters
 
 plt.style.use('seaborn-v0_8-colorblind')
+torch.set_num_threads(20)
+
+class AirModel (nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.lstm = nn.LSTM(input_size=4, hidden_size=50, num_layers=1, batch_first=True)
+        self.linear = nn.Linear(50,1)
+    def forward (self, x):
+        x, _ = self.lstm(x)
+        x = self.linear(x)
+        return x
 
 def visualize_time_series ():
     df = pd.read_csv('../datasets/transactions-in-USD-jan-2013-aug-2016.txt')
@@ -170,7 +181,74 @@ def forecast_time_series_test ():
     predictions = best_tft.predict(val_dataloader, return_y=True, trainer_kwargs=dict(accelerator='cpu'))
     MAE()(predictions.output, predictions.y)
 
-forecast_time_series_test ()
+def create_dataset(dataset, lookback):
+    x, y = [], []
+    for i in range(len(dataset)-lookback):
+        feature = dataset[i:i+lookback]
+        target = dataset[i+1:i+lookback+1]
+        x.append(feature)
+        y.append(target)
+    return torch.tensor(x), torch.tensor(y)
+
+def forecast_timeseries_lstm():
+    df = pd.read_csv('../datasets/transactions-in-USD-jan-2013-aug-2016.txt')
+
+    df = df.loc[df['USD_amount'] < 10**(8)].reset_index()
+    df = df.loc[df['USD_amount'] > 0].reset_index()
+    df = df[(np.abs(stats.zscore(df['USD_amount'])) < 3)]
+    df['unix_timestamp'] = pd.to_datetime(df['unix_timestamp'], unit='s')
+    df = df.loc[df['unix_timestamp'].dt.year >= 2016]
+    df = df.loc[df['unix_timestamp'].dt.month > 5]
+    df = df.sort_values(by=['unix_timestamp'], ascending=True).reset_index(drop=True)
+
+    train_size = int(len(df['USD_amount'])*0.67)
+    test_size = len(df['USD_amount']) - train_size
+    train, test = df['USD_amount'][:train_size].reset_index(drop=True), df['USD_amount'][train_size:].reset_index(drop=True)
+
+    lookback = 4
+    x_train, y_train = create_dataset(train.to_list(), lookback=lookback)
+    x_test, y_test = create_dataset(test.to_list(), lookback=lookback)
+
+    model = AirModel()
+    optimizer = optim.Adam(model.parameters())
+    loss_fn = nn.MSELoss()
+    loader = data.DataLoader(data.TensorDataset(x_train, y_train), shuffle=True, batch_size=8)
+
+    n_epochs = 2000
+    for epoch in range(n_epochs):
+        model.train()
+        for x_batch, y_batch in loader:
+            y_pred = model(x_batch)
+            loss = loss_fn(y_pred, y_batch)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        if epoch % 100 != 0:
+            continue
+        model.eval()
+        with torch.no_grad():
+            y_pred = model(x_train)
+            train_rmse = np.sqrt(loss_fn(y_pred, y_train))
+            y_pred = model(x_test)
+            test_rmse = np.sqrt(loss_fn(y_pred, y_test))
+        print('Epoch %d: train RMSE %.4f, test RMSE %.4f' % (epoch, train_rmse, test_rmse))
+    
+    with torch.no_grad():
+        train_plot = np.ones_like(df['USD_amount']) * np.nan
+        y_pred = model(x_train)
+        y_pred = y_pred[:, -1, :]
+        train_plot[lookback:train_size] = model(x_train)[:, -1, :]
+        test_plot = np.ones_like(df['USD_amount']) * np.nan
+        test_plot[train_size+lookback:len(df['USD_amount'])] = model(x_test)[:, -1, :]
+
+    plt.plot(df['USD_amount'])
+    plt.plot(train_plot, color='r')
+    plt.plot(test_plot, color='g')
+    plt.savefig('../results/lstm.pdf', dpi = 600, bbox_inches = 'tight')
+
+forecast_timeseries_lstm()
+
+
 
 def check_ripple_seasonality ():
     df = pd.read_csv('../datasets/transactions-in-USD-jan-2013-aug-2016.txt')
