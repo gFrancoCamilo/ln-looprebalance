@@ -40,19 +40,39 @@ from pytorch_forecasting import Baseline, TemporalFusionTransformer, TimeSeriesD
 from pytorch_forecasting.data import GroupNormalizer, NaNLabelEncoder
 from pytorch_forecasting.metrics import MAE, SMAPE, PoissonLoss, QuantileLoss
 from pytorch_forecasting.models.temporal_fusion_transformer.tuning import optimize_hyperparameters
+from torch.autograd import Variable
+
+from sklearn import preprocessing
 
 plt.style.use('seaborn-v0_8-colorblind')
-torch.set_num_threads(20)
+torch.set_num_threads(10)
 
-class AirModel (nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.lstm = nn.LSTM(input_size=4, hidden_size=50, num_layers=1, batch_first=True)
-        self.linear = nn.Linear(50,1)
-    def forward (self, x):
-        x, _ = self.lstm(x)
-        x = self.linear(x)
-        return x
+class LSTM1(nn.Module):
+    def __init__(self,num_classes, input_size, hidden_size, num_layers, seq_length):
+        super(LSTM1, self).__init__()
+        self.num_classes = num_classes
+        self.num_layers = num_layers
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.seq_length = seq_length
+
+        self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size,
+                num_layers=num_layers, batch_first=True)
+        self.fc_1 = nn.Linear(hidden_size, 128)
+        self.fc = nn.Linear(128, num_classes)
+
+        self.relu = nn.ReLU()
+    def forward (self,x):
+        h_0 = Variable(torch.zeros(self.num_layers, x.size(0), self.hidden_size))
+        c_0 = Variable(torch.zeros(self.num_layers, x.size(0), self.hidden_size))
+
+        output, (hn, cn) = self.lstm(x, (h_0, c_0))
+        hn = hn.view(-1, self.hidden_size)
+        out = self.relu(hn)
+        out = self.fc_1(out)
+        out = self.relu(out)
+        out = self.fc(out)
+        return out
 
 def visualize_time_series ():
     df = pd.read_csv('../datasets/transactions-in-USD-jan-2013-aug-2016.txt')
@@ -196,58 +216,98 @@ def create_dataset(dataset, lookback):
 def forecast_timeseries_lstm():
     df = pd.read_csv('../datasets/transactions-in-USD-jan-2013-aug-2016.txt')
 
-    df = df.loc[df['USD_amount'] < 10**(8)].reset_index()
-    df = df.loc[df['USD_amount'] > 0].reset_index()
+    df = df.loc[df['USD_amount'] < 10**(8)].reset_index(drop=True)
+    df = df.loc[df['USD_amount'] > 0].reset_index(drop=True)
     df = df[(np.abs(stats.zscore(df['USD_amount'])) < 3)]
     df['unix_timestamp'] = pd.to_datetime(df['unix_timestamp'], unit='s')
-    df = df.loc[df['unix_timestamp'].dt.year >= 2016]
-    df = df.loc[df['unix_timestamp'].dt.month > 5]
+    #df = df.loc[df['unix_timestamp'].dt.year >= 2014]
+    #df = df.loc[df['unix_timestamp'].dt.month > 7]
+    #df = df.loc[df['unix_timestamp'].dt.day > 14]
     df = df.sort_values(by=['unix_timestamp'], ascending=True).reset_index(drop=True)
+
+    df = df[[c for c in df if c not in ['USD_amount']] + ['USD_amount']]
+
+    x = df.iloc[:, :-1]
+    y = df.iloc[:, 4:5]
+
+    mm = preprocessing.MinMaxScaler()
+    #mm = preprocessing.RobustScaler()
+    x_le = x.apply(preprocessing.LabelEncoder().fit_transform)
+    y_mm = mm.fit_transform(y)
 
     train_size = int(len(df['USD_amount'])*0.67)
     test_size = len(df['USD_amount']) - train_size
-    train, test = df['USD_amount'][:train_size].reset_index(drop=True), df['USD_amount'][train_size:].reset_index(drop=True)
+
+    x_train = x_le.iloc[:train_size, :]
+    x_test = x_le.iloc[train_size:, :]
+
+    y_train = y_mm[:train_size, :]
+    y_test = y_mm[train_size:, :]
+
+    print('Training shape', x_train.shape, y_train.shape)
+    print('Test shape', x_test.shape, y_test.shape)
 
     lookback = 4
-    x_train, y_train = create_dataset(train.to_list(), lookback=lookback)
-    x_test, y_test = create_dataset(test.to_list(), lookback=lookback)
 
-    model = AirModel()
-    optimizer = optim.Adam(model.parameters())
+    x_train_tensors = Variable(torch.Tensor(x_train.values))
+    x_test_tensors = Variable(torch.Tensor(x_test.values))
+    y_train_tensors = Variable(torch.Tensor(y_train))
+    y_test_tensors = Variable(torch.Tensor(y_test))
+
+    x_train_tensors_final = torch.reshape(x_train_tensors, (x_train_tensors.shape[0], 1, x_train_tensors.shape[1]))
+    x_test_tensors_final = torch.reshape(x_test_tensors, (x_test_tensors.shape[0], 1, x_test_tensors.shape[1]))
+
+    print('Training shape', x_train_tensors_final.shape, y_train_tensors.shape)
+    print('Test shape', x_test_tensors_final.shape, y_test_tensors.shape)
+
+    model = LSTM1(num_classes=1, input_size = lookback, hidden_size = 10, num_layers = 1, seq_length = x_train_tensors_final.shape[1])
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
     loss_fn = nn.MSELoss()
-    loader = data.DataLoader(data.TensorDataset(x_train, y_train), shuffle=True, batch_size=8)
+    #loader = data.DataLoader(data.TensorDataset(x_train, y_train), shuffle=True, batch_size=64, num_workers = 10, prefetch_factor = 20)
 
-    n_epochs = 2000
+    loss_vec = []
+    n_epochs = 200
     for epoch in range(n_epochs):
-        model.train()
-        for x_batch, y_batch in loader:
-            y_pred = model(x_batch)
-            loss = loss_fn(y_pred, y_batch)
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-        if epoch % 100 != 0:
-            continue
-        model.eval()
-        with torch.no_grad():
-            y_pred = model(x_train)
-            train_rmse = np.sqrt(loss_fn(y_pred, y_train))
-            y_pred = model(x_test)
-            test_rmse = np.sqrt(loss_fn(y_pred, y_test))
-        print('Epoch %d: train RMSE %.4f, test RMSE %.4f' % (epoch, train_rmse, test_rmse))
-    
-    with torch.no_grad():
-        train_plot = np.ones_like(df['USD_amount']) * np.nan
-        y_pred = model(x_train)
-        y_pred = y_pred[:, -1, :]
-        train_plot[lookback:train_size] = model(x_train)[:, -1, :]
-        test_plot = np.ones_like(df['USD_amount']) * np.nan
-        test_plot[train_size+lookback:len(df['USD_amount'])] = model(x_test)[:, -1, :]
+        outputs = model.forward(x_train_tensors_final)
+        optimizer.zero_grad()
 
-    plt.plot(df['USD_amount'])
-    plt.plot(train_plot, color='r')
-    plt.plot(test_plot, color='g')
-    plt.savefig('../results/lstm.pdf', dpi = 600, bbox_inches = 'tight')
+        loss = loss_fn(outputs, y_train_tensors)
+
+        loss.backward()
+
+        optimizer.step()
+        if epoch % 1 == 0:
+            print('Epoch: %d, loss: %1.5f' % (epoch, loss.item()))
+            loss_vec.append(loss.item())
+
+    df_x_le = df.iloc[:, :-1].apply(preprocessing.LabelEncoder().fit_transform)
+    df_y_mm = mm.transform(df.iloc[:, -1:])
+
+    df_x_le = Variable(torch.Tensor(df_x_le.values))
+    df_y_mm = Variable(torch.Tensor(df_y_mm))
+
+    df_x_le = torch.reshape(df_x_le, (df_x_le.shape[0],1,df_x_le.shape[1]))
+
+    train_predict = model(df_x_le)
+    data_predict = train_predict.data.numpy()
+    datay_plot = df_y_mm.data.numpy()
+
+    data_predict = mm.inverse_transform(data_predict)
+    datay_plot = mm.inverse_transform(datay_plot)
+
+    plt.plot(datay_plot, label='Actual Data')
+    plt.plot(data_predict, label='Predicted Data')
+    plt.axvline(x=train_size, c='g', ls='--')
+    plt.legend()
+    plt.savefig('../results/lstm.pdf', dpi=600, bbox_inches='tight')
+
+    plt.clf()
+    plt.plot(loss_vec)
+    plt.ylabel('Loss', fontsize=20)
+    plt.xlabel('Epochs', fontsize=20)
+    plt.xticks(fontsize=18)
+    plt.yticks(fontsize=18)
+    plt.savefig('../results/loss_lstm.pdf', dpi=600, bbox_inches='tight')
 
 forecast_timeseries_lstm()
 
