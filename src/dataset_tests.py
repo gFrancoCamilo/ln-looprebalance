@@ -1,4 +1,7 @@
 import pandas as pd
+import matplotlib as mpl
+mpl.rcParams['text.usetex'] = True
+mpl.rcParams['text.latex.preamble'] = r'\usepackage{libertine}'
 import matplotlib.pyplot as plt
 import numpy as np
 import random
@@ -10,6 +13,8 @@ from topology import *
 from pcn import *
 from cycle_finder import *
 from tqdm import tqdm
+
+plt.style.use('seaborn-v0_8-colorblind')
 
 def check_ripple_seasonality ():
     df = pd.read_csv('../datasets/transactions-in-USD-jan-2013-aug-2016.txt')
@@ -187,13 +192,12 @@ def degree_distribution(Graph: nx.DiGraph):
     axin.set_ylim(0.3560,0.3595)
     ax.indicate_inset_zoom(axin, edgecolor='k')
     axin.grid()
-    axin.annotate(text=r'$\approx$36% of nodes have'+ '\none neighbor only',xy=(2,0.358), xytext=(2.1,0.3563), arrowprops=dict(arrowstyle='->', lw=2), fontsize=14)
-    plt.ylabel('CDF', fontsize=16)
-    plt.xlabel('Node degree', fontsize=16)
-    ax.tick_params(labelsize=16)
-    axin.tick_params(labelsize=16)
-    plt.show()
-    fig.savefig("../results/degree_distribution.pdf", dpi=300, bbox_inches='tight')
+    axin.annotate(text=r'$\approx$36\% of nodes have'+ '\none neighbor only',xy=(2,0.358), xytext=(2.1,0.3563), arrowprops=dict(arrowstyle='->', lw=2), fontsize=18)
+    plt.ylabel('CDF', fontsize=24)
+    plt.xlabel('Node Degree', fontsize=24)
+    ax.tick_params(labelsize=24)
+    axin.tick_params(labelsize=24)
+    fig.savefig("../results/degree_distribution.pdf", dpi=600, bbox_inches='tight')
 
 def check_cycles (Graph: nx.DiGraph, degree_check = 4):
     degrees = list(Graph.degree())
@@ -248,11 +252,12 @@ def plot_cycles_cost ():
     medianprops = dict(linewidth=2)
     fig = plt.figure()
     plt.boxplot(y, labels=['4',' ','8',' ','12',' ','16',' ','20',' ','24',' ','28',' ','32',' ','36',' ','40'], medianprops=medianprops, boxprops=medianprops)
-    plt.ylabel('Rebalancing Cost (in satoshis)', fontsize=16)
+    plt.ylabel('Rebalancing Fees (satoshis)', fontsize=24)
     plt.yscale('log')
-    plt.xlabel('Node Degree', fontsize=16)
-    plt.xticks(fontsize=16)
-    plt.yticks(fontsize=16)
+    plt.xlabel('Node Degree', fontsize=24)
+    plt.xticks(fontsize=24)
+    plt.yticks(fontsize=24)
+    plt.tight_layout()
     fig.savefig("../results/cycles_cost.pdf", dpi=300, bbox_inches='tight')
 
 def cheapest_cycles_vs_shortest_cycles (Graph: nx.DiGraph):
@@ -385,11 +390,95 @@ def check_fees_change ():
             graph_copy[node][neighbor].update(attr_ij)
             graph_copy[neighbor][node].update(attr_ji)
 
+def plot_transitivity ():
+    dates = ['jul 2020', 'jan 2021', 'jul 2021','jan 2022', 'jul 2022']
+    transitivity = []
+    for date in tqdm(dates, desc = 'Evaluating transitivity in topologies'):
+        Graph = graph_names(date)
+        Graph = validate_graph(Graph.copy())
+        transitivity.append(nx.transitivity(Graph))
 
-check_fees_change()
-#plt.style.use('seaborn-v0_8-colorblind')
+    plt.plot(['Jul 2020', 'Jan 2021', 'Jul 2021', 'Jan 2022', 'Jul 2022'], transitivity, lw=2)
+    plt.grid()
+    plt.xlabel('Date', fontsize = 24)
+    plt.ylabel('Network Transitivity', fontsize = 24)
+
+    plt.xticks(fontsize=24)
+    plt.yticks(fontsize=24)
+    ax = plt.gca()
+    
+    ax.set_xticklabels(['Jul 2020', ' ', 'Jul 2021', ' ', 'Jul 2022'])
+    ax.annotate(text=r'Transitivity hits all-time'+'\n low in Jan 2022',xy=(3,0.01), xytext=(0,0.01), arrowprops=dict(arrowstyle='->', lw=2), fontsize=18)
+
+    plt.tight_layout()
+
+    plt.savefig('../results/node_attachment_results/network_transitivity.pdf',dpi=600)
+
+def plot_capacity (Graph: nx.DiGraph, k: int = 101):
+    capacities = []
+    central_nodes = get_k_most_centralized_nodes(Graph, k)
+    central_nodes.reverse()
+    graph_copy = Graph.copy()
+    for node in central_nodes:
+        network_capacity = 0
+        seen = {}
+        for (i,j) in graph_copy.edges():
+            if (i,j) not in seen:
+                network_capacity += graph_copy[i][j]['capacity']
+                seen[(i,j)] = True
+                seen[(j,i)] = True
+        graph_copy.remove_node(node)
+        capacities.append(network_capacity)
+    x = [i for i in range(0,101)]
+    
+    plt.plot(x,capacities, lw=2)
+    plt.ylabel('Network Capacity (satoshis)',fontsize=20)
+    plt.xlabel('\# of Removed Central Nodes',fontsize=20)
+
+    plt.xticks(fontsize = 20)
+    plt.yticks(fontsize = 20)
+
+    ax = plt.gca()
+    ax.yaxis.get_offset_text().set_fontsize(20)
+    ax.annotate(text=r'Network capacity'+'\n falls by 70\%',xy=(95,62000000000), xytext=(20,62000000000), arrowprops=dict(arrowstyle='->', lw=2), fontsize=20)
+    
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig('../results/capacity_removing_nodes.pdf',dpi=600)
+
+def plot_components (Graph: nx.DiGraph, k: int = 101):
+    components = []
+    central_nodes = get_k_most_centralized_nodes(Graph, k)
+    central_nodes.reverse()
+    graph_copy = Graph.copy()
+    for node in central_nodes:
+        components.append(nx.number_strongly_connected_components(graph_copy))
+        graph_copy.remove_node(node)
+    x = [i for i in range(0,101)]
+    
+    plt.plot(x,components, lw=2)
+    plt.ylabel('\# of Connected Components',fontsize=20)
+    plt.xlabel('\# of Removed Central Nodes',fontsize=20)
+
+    plt.xticks(fontsize = 20)
+    plt.yticks(fontsize = 20)
+
+    ax = plt.gca()
+    ax.yaxis.get_offset_text().set_fontsize(20)
+    ax.annotate(text=r'Number of components'+'\n goes up to 2505',xy=(100,2500), xytext=(40,1500), arrowprops=dict(arrowstyle='->', lw=2), fontsize=20)
+    
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig('../results/components_removing_nodes.pdf',dpi=600)
+
+
+#plot_transitivity()
+#check_fees_change()
 #Graph = graph_names('jul 2022')
 #Graph = validate_graph(Graph)
+#plot_components(Graph)
+
+#plot_components(Graph)
 #cheapest_cycles_vs_shortest_cycles(Graph)
 #degree_distribution(Graph)
 
