@@ -1,6 +1,6 @@
 # Rebalancing and Node Placement in PCNs
 
-This repository was made to study and test different node placement and rebalancing techniques in payment channel networks. This is an ongoing work.
+The repository for the paper [ProfitPilot: Enabling Rebalancing in PCNs through Profitable Cycle Creation](https://ieeexplore.ieee.org/document/10418531) published on IEEE Transactions on Network and Service Management. The repository contains a simple PCN simulator written in Python with multiple attachment strategies and the scripts used to get the results presented in the paper.
 
 ## Requirements
 
